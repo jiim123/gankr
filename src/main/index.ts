@@ -2,7 +2,7 @@ import { app, BrowserWindow, Menu } from 'electron'
 import { createMainWindow, getMainWindow } from './window'
 import { createTray } from './tray'
 import { registerIpcHandlers } from './ipc'
-import { registerGankrProtocol, findProtocolUrl } from './protocol'
+import { registerGankrProtocol, findProtocolUrl, parseAuthCallbackUrl } from './protocol'
 
 // Must run before app is ready.
 registerGankrProtocol()
@@ -15,8 +15,12 @@ function quitApp(): void {
 }
 
 /** Handles a `gankr://...` callback URL, from either a cold start or a
- * second-instance hand-off. No auth flow exists yet (Phase 5) — this just
- * makes sure the plumbing has one place to grow into. */
+ * second-instance hand-off. Always brings the window back to front — the
+ * whole point of this hand-off is returning from the system browser to the
+ * app. An `auth-callback` URL additionally carries a session, parsed here
+ * and pushed to the renderer over the typed `auth:callback` event channel,
+ * since this is unsolicited data arriving from an OS-level URL hand-off
+ * rather than a renderer-initiated `invoke`. */
 function handleProtocolUrl(url: string): void {
   // eslint-disable-next-line no-console
   console.log('[gankr-protocol] received', url)
@@ -25,6 +29,11 @@ function handleProtocolUrl(url: string): void {
     if (window.isMinimized()) window.restore()
     window.show()
     window.focus()
+  }
+
+  const authCallback = parseAuthCallbackUrl(url)
+  if (authCallback && window) {
+    window.webContents.send('auth:callback', authCallback)
   }
 }
 

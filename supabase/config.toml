@@ -366,6 +366,20 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# Steam redirects the user's system browser here directly (a plain GET,
+# no Supabase JWT attached), so gateway-level JWT verification has to be
+# off for this one function. It does its own trust decision instead: the
+# openid.* params are only accepted after the check_authentication round
+# trip back to Steam (see supabase/functions/steam-auth-callback).
+[functions.steam-auth-callback]
+verify_jwt = false
+
+# Called by the signed-in renderer with its own session attached, so this
+# stays at the default (verify_jwt = true) as a gateway-level check in
+# front of the function's own JWT-derived user lookup.
+[functions.steam-library-sync]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

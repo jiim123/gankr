@@ -1,5 +1,6 @@
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
 import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse } from '@shared/ipc'
+import { buildSteamOpenIdUrl } from './auth'
 
 type Handler<C extends IpcChannel> = (
   request: IpcRequest<C>
@@ -16,7 +17,15 @@ const handlers: HandlerMap = {
   'app:ping': (request) => ({
     message: request.message,
     receivedAt: Date.now()
-  })
+  }),
+
+  'auth:sign-in-with-steam': () => {
+    const url = buildSteamOpenIdUrl()
+    // eslint-disable-next-line no-console
+    console.log('[auth] opening steam openid url in system browser', url)
+    void shell.openExternal(url)
+    return { openedUrl: url }
+  }
 }
 
 /** Registers every declared IPC channel. Throws if the schema and the

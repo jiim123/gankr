@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { IpcChannel, IpcRequest, IpcResponse } from '@shared/ipc'
+import type { IpcChannel, IpcEventSchema, IpcRequest, IpcResponse } from '@shared/ipc'
 
 function invoke<C extends IpcChannel>(channel: C, request: IpcRequest<C>): Promise<IpcResponse<C>> {
   return ipcRenderer.invoke(channel, request)
@@ -12,7 +12,22 @@ function invoke<C extends IpcChannel>(channel: C, request: IpcRequest<C>): Promi
  * never a raw Node or Electron API handed across the bridge.
  */
 const api = {
-  ping: (message: string) => invoke('app:ping', { message })
+  ping: (message: string) => invoke('app:ping', { message }),
+
+  /** Opens Steam sign-in in the system browser. The renderer never builds
+   * this URL or reaches network/shell APIs itself. */
+  signInWithSteam: () => invoke('auth:sign-in-with-steam', {}),
+
+  /** Subscribes to the session main pushes after a `gankr://auth-callback`
+   * hand-off (see src/main/protocol.ts). Returns an unsubscribe function. */
+  onAuthCallback: (callback: (payload: IpcEventSchema['auth:callback']) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: IpcEventSchema['auth:callback']): void =>
+      callback(payload)
+    ipcRenderer.on('auth:callback', listener)
+    return () => {
+      ipcRenderer.removeListener('auth:callback', listener)
+    }
+  }
 }
 
 export type GankrApi = typeof api

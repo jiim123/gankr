@@ -1,4 +1,21 @@
+import { useState } from 'react'
+
 export default function LoginPage() {
+  const [pending, setPending] = useState(false)
+
+  async function handleSignIn(): Promise<void> {
+    setPending(true)
+    try {
+      // Opens Steam OpenID sign-in in the system browser. Main handles the
+      // URL and shell.openExternal call; the renderer never touches either.
+      await window.gankr.signInWithSteam()
+    } finally {
+      // Stays pending-looking briefly even after the call resolves, since
+      // the actual sign-in happens in the browser tab that just opened.
+      setPending(false)
+    }
+  }
+
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-neutral-950">
       <div className="surface flex w-80 flex-col items-center gap-4 p-8">
@@ -9,13 +26,14 @@ export default function LoginPage() {
         <button
           type="button"
           className="btn-primary w-full"
-          onClick={() => {
-            // Steam OpenID flow is built in Phase 5.
-            console.log('sign in through steam')
-          }}
+          disabled={pending}
+          onClick={() => void handleSignIn()}
         >
           Sign in through Steam
         </button>
+        <p className="text-center text-xs text-neutral-500">
+          Opens in your browser. Come back to this window when you are done.
+        </p>
       </div>
     </div>
   )
