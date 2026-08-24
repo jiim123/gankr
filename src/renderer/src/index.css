@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-neutral-950 text-neutral-100 antialiased;
+    font-family:
+      -apple-system,
+      'Segoe UI',
+      Ubuntu,
+      Roboto,
+      sans-serif;
+  }
+}
+
+@layer components {
+  /* Primary action: white background, dark text. Reserve for the one
+     action a screen wants the eye to land on first. */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm
+      font-medium text-neutral-950 transition-colors hover:bg-neutral-200 disabled:cursor-not-allowed
+      disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-md border border-neutral-800
+      bg-neutral-900 px-3 py-2 text-sm font-medium text-neutral-100 transition-colors
+      hover:bg-neutral-800;
+  }
+
+  .surface {
+    @apply rounded-lg border border-neutral-800 bg-neutral-900;
+  }
+}
