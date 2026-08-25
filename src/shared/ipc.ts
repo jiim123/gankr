@@ -27,7 +27,38 @@ export interface IpcSchema {
     request: Record<string, never>
     response: { openedUrl: string }
   }
+
+  'app:get-version': {
+    request: Record<string, never>
+    response: { version: string }
+  }
+
+  /** Kicks off a manual update check. `triggered` is false only when the
+   * check itself couldn't be started — a failed check still surfaces
+   * through the `update:status-changed` push channel. */
+  'app:check-for-updates': {
+    request: Record<string, never>
+    response: { triggered: boolean }
+  }
+
+  /** Pulls the current update status. Needed because the startup check
+   * likely fires before Settings is ever opened, and the push channel alone
+   * would leave Settings blank until the next status change. */
+  'update:get-status': {
+    request: Record<string, never>
+    response: UpdateStatus
+  }
 }
+
+/** The state of the background update checker, pushed over
+ * `update:status-changed` and pulled via `update:get-status`. */
+export type UpdateStatus =
+  | { state: 'checking' }
+  | { state: 'available'; version: string }
+  | { state: 'not-available' }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string }
 
 export type IpcChannel = keyof IpcSchema
 
@@ -36,7 +67,13 @@ export type IpcRequest<C extends IpcChannel> = IpcSchema[C]['request']
 export type IpcResponse<C extends IpcChannel> = IpcSchema[C]['response']
 
 /** Every channel name, used by main to assert every handler got registered. */
-export const IPC_CHANNELS: IpcChannel[] = ['app:ping', 'auth:sign-in-with-steam']
+export const IPC_CHANNELS: IpcChannel[] = [
+  'app:ping',
+  'auth:sign-in-with-steam',
+  'app:get-version',
+  'app:check-for-updates',
+  'update:get-status'
+]
 
 /**
  * Main -> renderer push channels: unsolicited events that arrive from
@@ -48,6 +85,10 @@ export const IPC_CHANNELS: IpcChannel[] = ['app:ping', 'auth:sign-in-with-steam'
  */
 export interface IpcEventSchema {
   'auth:callback': { accessToken: string; refreshToken: string }
+
+  /** Pushed whenever the background update checker's state changes — see
+   * `src/main/updater.ts`. */
+  'update:status-changed': UpdateStatus
 }
 
 export type IpcEventChannel = keyof IpcEventSchema

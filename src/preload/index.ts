@@ -27,6 +27,25 @@ const api = {
     return () => {
       ipcRenderer.removeListener('auth:callback', listener)
     }
+  },
+
+  getVersion: () => invoke('app:get-version', {}),
+
+  checkForUpdates: () => invoke('app:check-for-updates', {}),
+
+  getUpdateStatus: () => invoke('update:get-status', {}),
+
+  /** Subscribes to update status pushes from `src/main/updater.ts`. Returns
+   * an unsubscribe function. */
+  onUpdateStatusChanged: (callback: (payload: IpcEventSchema['update:status-changed']) => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      payload: IpcEventSchema['update:status-changed']
+    ): void => callback(payload)
+    ipcRenderer.on('update:status-changed', listener)
+    return () => {
+      ipcRenderer.removeListener('update:status-changed', listener)
+    }
   }
 }
 

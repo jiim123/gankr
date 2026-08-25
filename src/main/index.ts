@@ -3,11 +3,13 @@ import { createMainWindow, getMainWindow } from './window'
 import { createTray } from './tray'
 import { registerIpcHandlers } from './ipc'
 import { registerGankrProtocol, findProtocolUrl, parseAuthCallbackUrl } from './protocol'
+import { initUpdater, isUpdateReadyToInstall, quitAndInstallUpdate } from './updater'
 
 // Must run before app is ready.
 registerGankrProtocol()
 
 let isQuitting = false
+let installingUpdate = false
 
 function quitApp(): void {
   isQuitting = true
@@ -83,6 +85,8 @@ if (!gotSingleInstanceLock) {
 
     createTray(quitApp)
 
+    if (app.isPackaged) initUpdater()
+
     const startupUrl = findProtocolUrl(process.argv)
     if (startupUrl) handleProtocolUrl(startupUrl)
 
@@ -96,8 +100,13 @@ if (!gotSingleInstanceLock) {
   })
 }
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
   isQuitting = true
+  if (isUpdateReadyToInstall() && !installingUpdate) {
+    installingUpdate = true
+    event.preventDefault()
+    quitAndInstallUpdate()
+  }
 })
 
 // Windows/Linux only: there is no dock, so there is nothing to keep alive

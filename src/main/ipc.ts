@@ -1,6 +1,7 @@
-import { ipcMain, shell } from 'electron'
+import { app, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse } from '@shared/ipc'
 import { buildSteamOpenIdUrl } from './auth'
+import { checkForUpdates, getCurrentUpdateStatus } from './updater'
 
 type Handler<C extends IpcChannel> = (
   request: IpcRequest<C>
@@ -25,7 +26,13 @@ const handlers: HandlerMap = {
     console.log('[auth] opening steam openid url in system browser', url)
     void shell.openExternal(url)
     return { openedUrl: url }
-  }
+  },
+
+  'app:get-version': () => ({ version: app.getVersion() }),
+
+  'app:check-for-updates': async () => await checkForUpdates(),
+
+  'update:get-status': () => getCurrentUpdateStatus()
 }
 
 /** Registers every declared IPC channel. Throws if the schema and the

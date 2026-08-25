@@ -1,8 +1,42 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { UpdateStatus } from '@shared/ipc'
+
+function describeUpdateStatus(status: UpdateStatus | null): string {
+  if (!status) return 'Checking for updates.'
+  switch (status.state) {
+    case 'checking':
+      return 'Checking for updates.'
+    case 'available':
+      return `Update ${status.version} available, downloading.`
+    case 'not-available':
+      return 'Up to date.'
+    case 'downloading':
+      return `Downloading update, ${status.percent}%.`
+    case 'downloaded':
+      return `Update ${status.version} ready, installs on quit.`
+    case 'error':
+      return `Update check failed: ${status.message}`
+  }
+}
 
 export default function SettingsPage() {
   const [pingResult, setPingResult] = useState<string | null>(null)
   const [pinging, setPinging] = useState(false)
+  const [version, setVersion] = useState<string | null>(null)
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
+
+  useEffect(() => {
+    void window.gankr.getVersion().then((response) => setVersion(response.version))
+    void window.gankr.getUpdateStatus().then((status) => setUpdateStatus(status))
+    return window.gankr.onUpdateStatusChanged((status) => setUpdateStatus(status))
+  }, [])
+
+  const checkingOrDownloading =
+    updateStatus?.state === 'checking' || updateStatus?.state === 'downloading'
+
+  async function runCheckForUpdates() {
+    await window.gankr.checkForUpdates()
+  }
 
   async function runPing() {
     setPinging(true)
@@ -32,8 +66,18 @@ export default function SettingsPage() {
         </section>
 
         <section className="surface p-4">
-          <h2 className="text-sm font-medium text-white">About</h2>
-          <p className="mt-1 text-sm text-neutral-400">Gankr 0.1.0 (development build)</p>
+          <h2 className="text-sm font-medium text-white">Software update</h2>
+          <p className="mt-1 text-sm text-neutral-400">
+            Gankr {version ?? '…'}. {describeUpdateStatus(updateStatus)}
+          </p>
+          <button
+            type="button"
+            className="btn-secondary mt-3"
+            onClick={() => void runCheckForUpdates()}
+            disabled={checkingOrDownloading}
+          >
+            Check for updates
+          </button>
         </section>
 
         <section className="surface p-4">
