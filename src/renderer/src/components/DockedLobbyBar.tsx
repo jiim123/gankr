@@ -86,7 +86,7 @@ export default function DockedLobbyBar({ lobby, currentUserId }: DockedLobbyBarP
           ].join(' ')}
           aria-hidden="true"
         />
-        <span className="flex-1 truncate text-sm font-medium text-white">{lobby.gameName}</span>
+        <span className="flex-1 truncate text-sm font-medium text-foreground">{lobby.gameName}</span>
         <span className="text-sm text-neutral-400">
           {memberCount}/{lobby.maxMembers} in lobby
         </span>
@@ -96,7 +96,7 @@ export default function DockedLobbyBar({ lobby, currentUserId }: DockedLobbyBarP
           </span>
         )}
         {!expanded && unreadCount > 0 && (
-          <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-neutral-950">
+          <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
             {unreadCount}
           </span>
         )}

@@ -50,7 +50,7 @@ export default function LobbyCard({ scored, onJoin, joining }: LobbyCardProps) {
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div>
-          <h3 className="text-sm font-medium text-white">{lobby.gameName}</h3>
+          <h3 className="text-sm font-medium text-foreground">{lobby.gameName}</h3>
           <p className="mt-1 text-xs text-neutral-400">
             {lobby.region} &middot; {labelForMic(lobby.mic)} &middot;{' '}
             {lobby.tone === 'casual' ? 'Casual' : 'Competitive'} &middot; {memberCount}/{lobby.maxMembers}

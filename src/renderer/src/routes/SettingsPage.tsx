@@ -136,12 +136,12 @@ export default function SettingsPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-neutral-800 px-6 py-4">
-        <h1 className="text-lg font-semibold text-white">Settings</h1>
+        <h1 className="text-lg font-semibold text-foreground">Settings</h1>
       </div>
 
       <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
         <section className="surface p-4">
-          <h2 className="text-sm font-medium text-white">Account</h2>
+          <h2 className="text-sm font-medium text-foreground">Account</h2>
           {profileLoading ? (
             <p className="mt-1 text-sm text-neutral-400">Loading…</p>
           ) : (
@@ -152,7 +152,7 @@ export default function SettingsPage() {
                 <div className="h-10 w-10 rounded-full bg-neutral-800" aria-hidden="true" />
               )}
               <div>
-                <div className="text-sm font-medium text-white">{profile.displayName ?? 'Signed in'}</div>
+                <div className="text-sm font-medium text-foreground">{profile.displayName ?? 'Signed in'}</div>
                 <div className="text-xs text-neutral-500">{session?.user.email}</div>
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="surface p-4">
-          <h2 className="text-sm font-medium text-white">Region &amp; languages</h2>
+          <h2 className="text-sm font-medium text-foreground">Region &amp; languages</h2>
           <p className="mt-1 text-sm text-neutral-400">
             Used to rank Find lobby results and to keep lobbies that don&apos;t share a language
             with you out of your search.
@@ -195,7 +195,7 @@ export default function SettingsPage() {
                     className={[
                       'rounded-full border px-3 py-1 text-xs transition-colors',
                       active
-                        ? 'border-white bg-white text-neutral-950'
+                        ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-neutral-800 bg-neutral-900 text-neutral-300 hover:bg-neutral-800'
                     ].join(' ')}
                   >
@@ -220,7 +220,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="surface p-4">
-          <h2 className="text-sm font-medium text-white">Software update</h2>
+          <h2 className="text-sm font-medium text-foreground">Software update</h2>
           <p className="mt-1 text-sm text-neutral-400">
             Gankr {version ?? '…'}. {describeUpdateStatus(updateStatus)}
           </p>
@@ -235,7 +235,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="surface p-4">
-          <h2 className="text-sm font-medium text-white">Main process connection</h2>
+          <h2 className="text-sm font-medium text-foreground">Main process connection</h2>
           <p className="mt-1 text-sm text-neutral-400">
             Sends a message over the typed IPC channel and shows what main sends back.
           </p>

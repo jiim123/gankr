@@ -25,12 +25,12 @@ function BellIcon() {
 
 export default function TopBar({ unreadCount, onOpenInvites }: TopBarProps) {
   return (
-    <header className="flex h-14 shrink-0 items-center justify-end border-b border-neutral-800 bg-neutral-950 px-4">
+    <header className="flex h-14 shrink-0 items-center justify-end border-b border-neutral-800 bg-background px-4">
       <button
         type="button"
         onClick={onOpenInvites}
         aria-label={`Invites and notifications, ${unreadCount} unread`}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-neutral-300 transition-colors hover:bg-neutral-900 hover:text-white"
+        className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-neutral-300 transition-colors hover:bg-neutral-900 hover:text-foreground"
       >
         <BellIcon />
         {unreadCount > 0 && (

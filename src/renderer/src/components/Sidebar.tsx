@@ -15,8 +15,8 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function Sidebar() {
   return (
-    <nav className="flex w-56 shrink-0 flex-col border-r border-neutral-800 bg-neutral-950 px-3 py-4">
-      <div className="px-2 pb-6 text-lg font-semibold tracking-tight text-white">Gankr</div>
+    <nav className="flex w-56 shrink-0 flex-col border-r border-neutral-800 bg-background px-3 py-4">
+      <div className="px-2 pb-6 text-lg font-semibold tracking-tight text-foreground">Gankr</div>
       <ul className="flex flex-col gap-1">
         {NAV_ITEMS.map((item) => (
           <li key={item.to}>
@@ -26,8 +26,8 @@ export default function Sidebar() {
                 [
                   'block rounded-md px-3 py-2 text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-neutral-900 text-white'
-                    : 'text-neutral-400 hover:bg-neutral-900 hover:text-neutral-100'
+                    ? 'bg-neutral-900 text-foreground'
+                    : 'text-neutral-400 hover:bg-neutral-900 hover:text-foreground'
                 ].join(' ')
               }
             >

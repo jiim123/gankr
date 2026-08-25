@@ -117,7 +117,7 @@ export default function ProfilePage() {
     return (
       <div className="flex h-full flex-col">
         <div className="border-b border-neutral-800 px-6 py-4">
-          <h1 className="text-lg font-semibold text-white">Profile</h1>
+          <h1 className="text-lg font-semibold text-foreground">Profile</h1>
         </div>
       </div>
     )
@@ -143,7 +143,7 @@ export default function ProfilePage() {
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-neutral-800 px-6 py-4">
-        <h1 className="text-lg font-semibold text-white">Profile</h1>
+        <h1 className="text-lg font-semibold text-foreground">Profile</h1>
       </div>
 
       <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
@@ -154,14 +154,14 @@ export default function ProfilePage() {
             <div className="h-16 w-16 rounded-full bg-neutral-800" aria-hidden="true" />
           )}
           <div>
-            <div className="text-lg font-semibold text-white">{profile.display_name}</div>
+            <div className="text-lg font-semibold text-foreground">{profile.display_name}</div>
             <div className="text-sm text-neutral-400">{profile.region ?? 'Region not set'}</div>
           </div>
         </section>
 
         <section className="surface p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-medium text-white">Top games by playtime</h2>
+            <h2 className="text-sm font-medium text-foreground">Top games by playtime</h2>
             {isOwnProfile && (
               <button type="button" className="btn-secondary" onClick={() => void handleSync()} disabled={syncing}>
                 {syncing ? 'Syncing…' : 'Sync library'}
@@ -199,7 +199,7 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-3">
                     {game.headerImage && <img src={game.headerImage} alt="" className="h-8 w-8 rounded" />}
                     <div>
-                      <div className="text-sm font-medium text-white">{game.name}</div>
+                      <div className="text-sm font-medium text-foreground">{game.name}</div>
                       <div className="text-xs text-neutral-500">
                         {minutesToHours(game.playtimeForeverMinutes)} hrs
                       </div>

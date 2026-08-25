@@ -32,7 +32,14 @@ Desktop client for finding people to play games with. Electron, React, TypeScrip
 
 - TypeScript strict. No `any` without a comment explaining why.
 - Prose in UI copy is plain and short. No exclamation marks, no "Oops!".
-- Dark UI, neutral greys, white as the primary action colour, one accent for data.
+- Dark UI, neutral greys. Primary action colour is the brand accent
+  (`oklch(0.6629 0.2272 35.97)`, bg-primary/text-primary-foreground), not white — white was
+  the original placeholder, replaced in a design pass. Background is `oklch(0.1543 0 0)`
+  (bg-background), titles and primary text are `oklch(0.9521 0 0)` (text-foreground).
+  Secondary actions (Cancel, Leave lobby, etc.) stay transparent with a
+  `oklch(0.4731 0.1535 37.42)` border (border-secondary-border) and text-foreground — never
+  filled. One further accent (blue) is reserved for data values like match percentages,
+  separate from the primary action colour.
 - Prefer boring, obvious code. This is a solo project that has to stay maintainable.
 
 ### Architecture
@@ -97,7 +104,14 @@ Desktop client for finding people to play games with. Electron, React, TypeScrip
 
 - TypeScript strict. No `any` without a comment explaining why.
 - Prose in UI copy is plain and short. No exclamation marks, no "Oops!".
-- Dark UI, neutral greys, white as the primary action colour, one accent for data.
+- Dark UI, neutral greys. Primary action colour is the brand accent
+  (`oklch(0.6629 0.2272 35.97)`, bg-primary/text-primary-foreground), not white — white was
+  the original placeholder, replaced in a design pass. Background is `oklch(0.1543 0 0)`
+  (bg-background), titles and primary text are `oklch(0.9521 0 0)` (text-foreground).
+  Secondary actions (Cancel, Leave lobby, etc.) stay transparent with a
+  `oklch(0.4731 0.1535 37.42)` border (border-secondary-border) and text-foreground — never
+  filled. One further accent (blue) is reserved for data values like match percentages,
+  separate from the primary action colour.
 - Prefer boring, obvious code. This is a solo project that has to stay maintainable.
 
 ## Architecture

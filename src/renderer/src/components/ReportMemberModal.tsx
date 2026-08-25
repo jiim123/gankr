@@ -63,7 +63,7 @@ export default function ReportMemberModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
       <div className="surface w-full max-w-md p-5">
-        <h2 className="text-sm font-medium text-white">Report {reportedDisplayName}</h2>
+        <h2 className="text-sm font-medium text-foreground">Report {reportedDisplayName}</h2>
 
         {done ? (
           <p className="mt-4 text-sm text-neutral-400">
@@ -84,7 +84,7 @@ export default function ReportMemberModal({
                       className={[
                         'rounded-full border px-3 py-1 text-xs transition-colors',
                         active
-                          ? 'border-white bg-white text-neutral-950'
+                          ? 'border-primary bg-primary text-primary-foreground'
                           : 'border-neutral-800 bg-neutral-900 text-neutral-300 hover:bg-neutral-800'
                       ].join(' ')}
                     >

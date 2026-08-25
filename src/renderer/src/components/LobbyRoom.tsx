@@ -68,7 +68,7 @@ export default function LobbyRoom({ lobby, currentUserId }: LobbyRoomProps) {
           }}
         />
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-sm font-medium text-white">{lobby.gameName}</h2>
+          <h2 className="truncate text-sm font-medium text-foreground">{lobby.gameName}</h2>
           <p className="text-xs text-neutral-400">{labelForStatus(lobby.status)}</p>
         </div>
         <button type="button" className="btn-secondary shrink-0" disabled={leaving} onClick={() => void handleLeave()}>

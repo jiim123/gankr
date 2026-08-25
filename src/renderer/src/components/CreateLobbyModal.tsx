@@ -150,7 +150,7 @@ export default function CreateLobbyModal({ open, prefill, activeLobby, onClose }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
       <div className="surface w-full max-w-md p-5">
-        <h2 className="text-sm font-medium text-white">Create lobby</h2>
+        <h2 className="text-sm font-medium text-foreground">Create lobby</h2>
 
         {loading ? (
           <p className="mt-4 text-sm text-neutral-400">Loading your games…</p>

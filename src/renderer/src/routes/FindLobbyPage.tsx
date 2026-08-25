@@ -136,7 +136,7 @@ export default function FindLobbyPage() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-neutral-800 px-6 py-4">
-        <h1 className="text-lg font-semibold text-white">Find lobby</h1>
+        <h1 className="text-lg font-semibold text-foreground">Find lobby</h1>
         <button type="button" className="btn-secondary" onClick={() => openCreateLobby()}>
           Create lobby
         </button>

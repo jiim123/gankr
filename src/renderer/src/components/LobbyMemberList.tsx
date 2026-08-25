@@ -54,7 +54,7 @@ export default function LobbyMemberList({ lobby, currentUserId, onReport }: Lobb
 
   return (
     <div className="surface p-4">
-      <h3 className="text-sm font-medium text-white">Members</h3>
+      <h3 className="text-sm font-medium text-foreground">Members</h3>
       <ul className="mt-3 space-y-2">
         {lobby.members.map((member) => {
           const isSelf = member.userId === currentUserId
@@ -69,7 +69,7 @@ export default function LobbyMemberList({ lobby, currentUserId, onReport }: Lobb
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="truncate text-sm text-white">{member.displayName}</span>
+                  <span className="truncate text-sm text-foreground">{member.displayName}</span>
                   {isMemberOwner && (
                     <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[11px] text-neutral-300">
                       Owner

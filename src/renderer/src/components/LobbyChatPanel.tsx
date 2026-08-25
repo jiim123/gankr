@@ -53,7 +53,7 @@ export default function LobbyChatPanel({ lobbyId, currentUserId, members }: Lobb
 
   return (
     <div className="surface flex h-full flex-col p-4">
-      <h3 className="text-sm font-medium text-white">Chat</h3>
+      <h3 className="text-sm font-medium text-foreground">Chat</h3>
 
       <div ref={scrollRef} onScroll={handleScroll} className="mt-3 flex-1 space-y-3 overflow-y-auto">
         {messages.length === 0 && <p className="text-sm text-neutral-500">No messages yet.</p>}
@@ -65,7 +65,7 @@ export default function LobbyChatPanel({ lobbyId, currentUserId, members }: Lobb
           ) : (
             <div key={message.id} className="max-w-[85%]">
               <span className="text-xs text-neutral-400">{message.senderDisplayName}</span>
-              <div className="surface mt-0.5 px-3 py-2 text-sm text-neutral-100">{message.body}</div>
+              <div className="surface mt-0.5 px-3 py-2 text-sm text-foreground">{message.body}</div>
             </div>
           )
         )}

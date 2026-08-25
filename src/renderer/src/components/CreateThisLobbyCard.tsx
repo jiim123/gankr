@@ -38,7 +38,7 @@ export default function CreateThisLobbyCard({ gameName, region, mic, tone, onCre
 
   return (
     <div className="surface flex flex-col items-center gap-3 border-dashed p-8 text-center">
-      <h3 className="text-sm font-medium text-white">Nothing matches this search yet</h3>
+      <h3 className="text-sm font-medium text-foreground">Nothing matches this search yet</h3>
       <p className="max-w-sm text-sm text-neutral-400">
         Create a lobby with exactly what you searched for. It becomes the first result the next
         person with the same preferences sees.
