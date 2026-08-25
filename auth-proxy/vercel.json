@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/steam-callback.js": {
-      "runtime": "nodejs20.x"
-    }
-  }
-}
