@@ -14,7 +14,7 @@ const GANKR_AUTH_ORIGIN = 'https://auth.gankr.com'
  * webview, which Steam flags as phishing for embedded logins.
  */
 export function buildSteamOpenIdUrl(): string {
-  const returnTo = `${GANKR_AUTH_ORIGIN}/steam-callback`
+  const returnTo = `${GANKR_AUTH_ORIGIN}/api/steam-callback`
   const params = new URLSearchParams({
     'openid.ns': 'http://specs.openid.net/auth/2.0',
     'openid.mode': 'checkid_setup',
