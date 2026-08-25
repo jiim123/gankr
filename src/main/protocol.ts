@@ -4,6 +4,26 @@ import type { IpcEventSchema } from '@shared/ipc'
 
 export const GANKR_PROTOCOL = 'gankr'
 
+// Buffers an auth callback that arrives before the renderer is ready to
+// receive it — most importantly the cold-start case, where the app is
+// launched BY the gankr:// click itself: main sends the auth:callback
+// event over IPC almost immediately, well before React has mounted and
+// subscribed, so a push-only delivery is silently dropped. The renderer
+// pulls this once on mount (see auth:get-pending-callback) to cover that
+// gap; the live push still covers the already-running/warm case.
+let pendingAuthCallback: IpcEventSchema['auth:callback'] | null = null
+
+export function setPendingAuthCallback(callback: IpcEventSchema['auth:callback']): void {
+  pendingAuthCallback = callback
+}
+
+/** Returns and clears the buffered callback, so it's only ever delivered once. */
+export function takePendingAuthCallback(): IpcEventSchema['auth:callback'] | null {
+  const callback = pendingAuthCallback
+  pendingAuthCallback = null
+  return callback
+}
+
 /**
  * Registers the `gankr://` protocol so Steam-auth callbacks (Phase 5) can
  * hand a session back to a running or freshly launched instance of the app.

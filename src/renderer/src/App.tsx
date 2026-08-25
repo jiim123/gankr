@@ -22,20 +22,37 @@ function useAuthCallbackBridge(): void {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const unsubscribe = window.gankr.onAuthCallback(({ accessToken, refreshToken }) => {
-      void (async () => {
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken
-        })
-        if (error) {
-          // eslint-disable-next-line no-console
-          console.error('[auth] failed to apply session from callback', error)
-          return
-        }
-        void syncSteamLibrary()
-        navigate('/find', { replace: true })
-      })()
+    async function applyCallback({
+      accessToken,
+      refreshToken
+    }: {
+      accessToken: string
+      refreshToken: string
+    }): Promise<void> {
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      })
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error('[auth] failed to apply session from callback', error)
+        return
+      }
+      void syncSteamLibrary()
+      navigate('/find', { replace: true })
+    }
+
+    // Cold-start case: the app can be launched BY the gankr:// click
+    // itself, in which case main sends the auth:callback push before this
+    // component has even mounted, and it's dropped with nobody listening.
+    // Pull once for anything that already arrived, in addition to
+    // subscribing below for the already-running/warm case.
+    void window.gankr.getPendingAuthCallback().then((callback) => {
+      if (callback) void applyCallback(callback)
+    })
+
+    const unsubscribe = window.gankr.onAuthCallback((callback) => {
+      void applyCallback(callback)
     })
     return unsubscribe
   }, [navigate])

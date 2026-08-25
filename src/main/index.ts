@@ -2,7 +2,12 @@ import { app, BrowserWindow, Menu } from 'electron'
 import { createMainWindow, getMainWindow } from './window'
 import { createTray } from './tray'
 import { registerIpcHandlers } from './ipc'
-import { registerGankrProtocol, findProtocolUrl, parseAuthCallbackUrl } from './protocol'
+import {
+  registerGankrProtocol,
+  findProtocolUrl,
+  parseAuthCallbackUrl,
+  setPendingAuthCallback
+} from './protocol'
 import { initUpdater, isUpdateReadyToInstall, quitAndInstallUpdate } from './updater'
 
 // Must run before app is ready.
@@ -34,8 +39,12 @@ function handleProtocolUrl(url: string): void {
   }
 
   const authCallback = parseAuthCallbackUrl(url)
-  if (authCallback && window) {
-    window.webContents.send('auth:callback', authCallback)
+  if (authCallback) {
+    // Buffered regardless of whether the renderer is ready yet (see
+    // protocol.ts) — the live push below still fires for the warm case
+    // where a listener is already subscribed.
+    setPendingAuthCallback(authCallback)
+    window?.webContents.send('auth:callback', authCallback)
   }
 }
 

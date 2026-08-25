@@ -2,6 +2,7 @@ import { app, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse } from '@shared/ipc'
 import { buildSteamOpenIdUrl } from './auth'
 import { checkForUpdates, getCurrentUpdateStatus } from './updater'
+import { takePendingAuthCallback } from './protocol'
 
 type Handler<C extends IpcChannel> = (
   request: IpcRequest<C>
@@ -32,7 +33,9 @@ const handlers: HandlerMap = {
 
   'app:check-for-updates': async () => await checkForUpdates(),
 
-  'update:get-status': () => getCurrentUpdateStatus()
+  'update:get-status': () => getCurrentUpdateStatus(),
+
+  'auth:get-pending-callback': () => takePendingAuthCallback()
 }
 
 /** Registers every declared IPC channel. Throws if the schema and the

@@ -18,6 +18,11 @@ const api = {
    * this URL or reaches network/shell APIs itself. */
   signInWithSteam: () => invoke('auth:sign-in-with-steam', {}),
 
+  /** Pulls (and clears) any auth callback that arrived before this listener
+   * existed — the cold-start case. Call once on mount alongside
+   * onAuthCallback below. */
+  getPendingAuthCallback: () => invoke('auth:get-pending-callback', {}),
+
   /** Subscribes to the session main pushes after a `gankr://auth-callback`
    * hand-off (see src/main/protocol.ts). Returns an unsubscribe function. */
   onAuthCallback: (callback: (payload: IpcEventSchema['auth:callback']) => void) => {

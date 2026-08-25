@@ -48,6 +48,15 @@ export interface IpcSchema {
     request: Record<string, never>
     response: UpdateStatus
   }
+
+  /** Pulls (and clears) any auth callback that arrived before the renderer
+   * was ready to receive the `auth:callback` push — the cold-start case,
+   * where the app was launched BY the gankr:// click itself. See
+   * src/main/protocol.ts. */
+  'auth:get-pending-callback': {
+    request: Record<string, never>
+    response: IpcEventSchema['auth:callback'] | null
+  }
 }
 
 /** The state of the background update checker, pushed over
@@ -72,7 +81,8 @@ export const IPC_CHANNELS: IpcChannel[] = [
   'auth:sign-in-with-steam',
   'app:get-version',
   'app:check-for-updates',
-  'update:get-status'
+  'update:get-status',
+  'auth:get-pending-callback'
 ]
 
 /**
