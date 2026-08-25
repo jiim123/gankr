@@ -151,6 +151,7 @@ export type Database = {
           closed_at: string | null
           created_at: string
           id: string
+          languages: string[]
           locked: boolean
           max_members: number
           mic: Database["public"]["Enums"]["mic_requirement"]
@@ -164,6 +165,7 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           id?: string
+          languages?: string[]
           locked?: boolean
           max_members: number
           mic?: Database["public"]["Enums"]["mic_requirement"]
@@ -177,6 +179,7 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           id?: string
+          languages?: string[]
           locked?: boolean
           max_members?: number
           mic?: Database["public"]["Enums"]["mic_requirement"]

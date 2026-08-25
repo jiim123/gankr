@@ -38,4 +38,11 @@
   .surface {
     @apply rounded-lg border border-neutral-800 bg-neutral-900;
   }
+
+  /* Shared input style for selects and text inputs: bordered, matching
+     btn-primary/btn-secondary/surface's existing convention. */
+  .field {
+    @apply rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-neutral-100
+      transition-colors focus:border-neutral-600 focus:outline-none;
+  }
 }

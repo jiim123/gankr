@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import type { MockLobby } from '../state/mock-lobby'
+import { useEffect, useRef, useState } from 'react'
+import type { LobbySummary } from '../lib/lobby-summary'
 
 interface DockedLobbyBarProps {
-  lobby: MockLobby | null
+  lobby: LobbySummary | null
 }
 
 /**
@@ -11,13 +11,32 @@ interface DockedLobbyBarProps {
  * instead of being tied to any one page. Clicking it expands in place into
  * a fuller view; Phase 7 replaces the expanded panel with the real lobby
  * room (member list, requirements, chat).
+ *
+ * "membersReady" from the Phase 3 stub is gone — no "ready" concept exists
+ * anywhere in the schema. It's replaced by the same "N of M in game" line
+ * used on LobbyCard, which honestly renders nothing until Phase 8 exists.
  */
 export default function DockedLobbyBar({ lobby }: DockedLobbyBarProps) {
   const [expanded, setExpanded] = useState(false)
+  // `undefined` means "not yet initialized" so the very first render (which
+  // may already have an active lobby, e.g. reopening the app) doesn't
+  // auto-expand — only a join/create that happens *during* this session does.
+  const previousLobbyId = useRef<string | null | undefined>(undefined)
+
+  useEffect(() => {
+    const currentId = lobby?.id ?? null
+    const previousId = previousLobbyId.current
+    if (previousId !== undefined && currentId !== null && currentId !== previousId) {
+      setExpanded(true)
+    }
+    if (currentId === null) setExpanded(false)
+    previousLobbyId.current = currentId
+  }, [lobby?.id])
 
   if (!lobby) return null
 
-  const isReady = lobby.membersReady === lobby.memberCount
+  const memberCount = lobby.members.length
+  const inGameCount = lobby.members.filter((member) => member.memberState === 'in_game').length
 
   return (
     <div className="shrink-0 border-t border-neutral-800 bg-neutral-900">
@@ -35,16 +54,13 @@ export default function DockedLobbyBar({ lobby }: DockedLobbyBarProps) {
         />
         <span className="flex-1 truncate text-sm font-medium text-white">{lobby.gameName}</span>
         <span className="text-sm text-neutral-400">
-          {lobby.memberCount}/{lobby.maxMembers} in lobby
+          {memberCount}/{lobby.maxMembers} in lobby
         </span>
-        <span
-          className={[
-            'rounded-full px-2 py-0.5 text-xs font-medium',
-            isReady ? 'bg-emerald-500/15 text-emerald-400' : 'bg-neutral-800 text-neutral-300'
-          ].join(' ')}
-        >
-          {isReady ? 'Ready' : `${lobby.membersReady}/${lobby.memberCount} ready`}
-        </span>
+        {inGameCount > 0 && (
+          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-400">
+            {inGameCount} of {memberCount} in game
+          </span>
+        )}
         <svg
           viewBox="0 0 24 24"
           fill="none"
