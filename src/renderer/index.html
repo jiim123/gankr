@@ -2,9 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!--
+      connect-src must list the Supabase project's own origin (https for
+      REST/Auth, wss for Realtime) — with none listed, default-src 'self'
+      silently blocks every Supabase call from the renderer, including
+      auth.setSession(). Update this if the project URL ever changes.
+      img-src additionally allows Steam's avatar CDN, since profile
+      pictures come straight from Steam's own avatarfull URLs.
+    -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.steamstatic.com https://avatars.akamai.steamstatic.com; connect-src 'self' https://vqeefvrbxccfmfngwifr.supabase.co wss://vqeefvrbxccfmfngwifr.supabase.co;"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gankr</title>

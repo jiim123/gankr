@@ -42,6 +42,17 @@ export function createMainWindow(): BrowserWindow {
     window.show()
   })
 
+  if (is.dev) {
+    // Renderer console.log/error only goes to that window's own DevTools,
+    // not this process's stdout — mirror it here so a solo dev running via
+    // `npm start`/`npm run dev` sees renderer-side errors without having to
+    // remember to open DevTools every time.
+    window.webContents.on('console-message', (_event, level, message) => {
+      // eslint-disable-next-line no-console
+      console.log(`[renderer:${level}]`, message)
+    })
+  }
+
   // Never let the window navigate to or open an external destination
   // in-place; hand it to the system browser instead.
   window.webContents.setWindowOpenHandler((details) => {
