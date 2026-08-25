@@ -1,0 +1,6 @@
+{
+  "name": "gankr-auth-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reverse proxy so Steam's OpenID consent page shows auth.gankr.com instead of the raw Supabase project URL. Forwards everything to the steam-auth-callback Edge Function, which does the real work."
+}

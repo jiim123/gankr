@@ -1,4 +1,5 @@
 import { app } from 'electron'
+import { resolve } from 'path'
 import type { IpcEventSchema } from '@shared/ipc'
 
 export const GANKR_PROTOCOL = 'gankr'
@@ -14,8 +15,12 @@ export function registerGankrProtocol(): void {
     // executable, so the OS needs to be told to launch it with this
     // script's path as the argument the protocol invocation should replay.
     if (process.argv.length >= 2) {
+      // Must be absolute: Windows launches a registered protocol handler
+      // with no explicit working directory (it defaults to
+      // C:\Windows\System32), so a relative path here fails to resolve
+      // when the OS invokes this from an external process like a browser.
       app.setAsDefaultProtocolClient(GANKR_PROTOCOL, process.execPath, [
-        process.argv[1] as string
+        resolve(process.argv[1] as string)
       ])
     }
   } else {
