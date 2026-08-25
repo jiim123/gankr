@@ -1,27 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 import type { LobbySummary } from '../lib/lobby-summary'
+import { supabase } from '../lib/supabase'
+import LobbyRoom from './LobbyRoom'
 
 interface DockedLobbyBarProps {
   lobby: LobbySummary | null
+  currentUserId: string | undefined
 }
 
 /**
  * Persistent bar for the lobby the user is currently in. Lives at the
  * layout level (see AppShell) so it stays mounted across route changes
  * instead of being tied to any one page. Clicking it expands in place into
- * a fuller view; Phase 7 replaces the expanded panel with the real lobby
- * room (member list, requirements, chat).
+ * the full Phase 7 lobby room (member list, requirements, chat).
  *
  * "membersReady" from the Phase 3 stub is gone — no "ready" concept exists
  * anywhere in the schema. It's replaced by the same "N of M in game" line
  * used on LobbyCard, which honestly renders nothing until Phase 8 exists.
  */
-export default function DockedLobbyBar({ lobby }: DockedLobbyBarProps) {
+export default function DockedLobbyBar({ lobby, currentUserId }: DockedLobbyBarProps) {
   const [expanded, setExpanded] = useState(false)
   // `undefined` means "not yet initialized" so the very first render (which
   // may already have an active lobby, e.g. reopening the app) doesn't
   // auto-expand — only a join/create that happens *during* this session does.
   const previousLobbyId = useRef<string | null | undefined>(undefined)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     const currentId = lobby?.id ?? null
@@ -33,7 +36,38 @@ export default function DockedLobbyBar({ lobby }: DockedLobbyBarProps) {
     previousLobbyId.current = currentId
   }, [lobby?.id])
 
-  if (!lobby) return null
+  // Unread count: only lives here, the only consumer, and only while the
+  // room isn't actually open. A second, independent Realtime subscription
+  // from useLobbyChat's (which only runs while the room is mounted) — the
+  // two are mutually exclusive by `expanded`, so no persisted "last read"
+  // watermark is needed.
+  useEffect(() => {
+    setUnreadCount(0)
+  }, [lobby?.id])
+
+  useEffect(() => {
+    const lobbyId = lobby?.id
+    if (expanded || !lobbyId) return undefined
+
+    const channel = supabase
+      .channel(`lobby-chat-unread-${lobbyId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'lobby_messages', filter: `lobby_id=eq.${lobbyId}` },
+        () => setUnreadCount((count) => count + 1)
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [expanded, lobby?.id])
+
+  useEffect(() => {
+    if (expanded) setUnreadCount(0)
+  }, [expanded])
+
+  if (!lobby || !currentUserId) return null
 
   const memberCount = lobby.members.length
   const inGameCount = lobby.members.filter((member) => member.memberState === 'in_game').length
@@ -61,6 +95,11 @@ export default function DockedLobbyBar({ lobby }: DockedLobbyBarProps) {
             {inGameCount} of {memberCount} in game
           </span>
         )}
+        {!expanded && unreadCount > 0 && (
+          <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-neutral-950">
+            {unreadCount}
+          </span>
+        )}
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -77,12 +116,7 @@ export default function DockedLobbyBar({ lobby }: DockedLobbyBarProps) {
         </svg>
       </button>
 
-      {expanded && (
-        <div className="border-t border-neutral-800 px-4 py-3 text-sm text-neutral-400">
-          Full lobby room is not built yet. This panel will show the member list, game
-          requirements, and chat.
-        </div>
-      )}
+      {expanded && <LobbyRoom lobby={lobby} currentUserId={currentUserId} />}
     </div>
   )
 }

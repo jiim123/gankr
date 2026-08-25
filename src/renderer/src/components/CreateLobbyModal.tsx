@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Tables } from '@shared/db-types'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../lib/session'
-import { MIC_OPTIONS, REGIONS, TONE_OPTIONS } from '../lib/lobby-options'
+import { MAX_MEMBERS, MIC_OPTIONS, MIN_MEMBERS, REGIONS, TONE_OPTIONS } from '../lib/lobby-options'
 import type { LobbySummary } from '../lib/lobby-summary'
 
 type MicRequirement = Tables<'lobbies'>['mic']
@@ -42,8 +42,6 @@ async function loadCreateLobbyContext(userId: string): Promise<CreateLobbyContex
   return { games, region: profile?.region ?? null, languages: profile?.languages ?? [] }
 }
 
-const MIN_MEMBERS = 2
-const MAX_MEMBERS = 8
 const DEFAULT_MEMBERS = 5
 
 function labelForMic(mic: MicRequirement): string {

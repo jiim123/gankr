@@ -52,7 +52,7 @@ export default function AppShell() {
         <main className="min-h-0 flex-1 overflow-y-auto">
           <Outlet context={outletContext} />
         </main>
-        <DockedLobbyBar lobby={activeLobby} />
+        <DockedLobbyBar lobby={activeLobby} currentUserId={session?.user.id} />
       </div>
 
       <CreateLobbyModal

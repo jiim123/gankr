@@ -380,6 +380,12 @@ verify_jwt = false
 [functions.steam-library-sync]
 verify_jwt = true
 
+# Same as steam-library-sync: called by the signed-in renderer with its own
+# session attached, gateway-level JWT check in front of the function's own
+# JWT-derived caller lookup.
+[functions.submit-report]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
