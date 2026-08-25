@@ -109,6 +109,26 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'not a member of that lobby' }, 403)
   }
 
+  // The reported user must also have actually been a member of this lobby —
+  // otherwise a caller could file a report against an arbitrary user id as
+  // long as they themselves were in some lobby, which would just be noise
+  // for the future moderation queue (Phase 13) rather than something
+  // reviewable in context.
+  const { data: targetMembership, error: targetMembershipError } = await adminClient
+    .from('lobby_members')
+    .select('lobby_id')
+    .eq('lobby_id', lobbyId)
+    .eq('user_id', reportedUserId)
+    .maybeSingle()
+
+  if (targetMembershipError) {
+    console.error('[submit-report] target membership lookup failed', targetMembershipError)
+    return jsonResponse({ error: 'lookup failed' }, 500)
+  }
+  if (!targetMembership) {
+    return jsonResponse({ error: 'reported user was not a member of that lobby' }, 400)
+  }
+
   // Snapshot the most recent messages for context. Sender display names are
   // resolved now, at snapshot time, so the JSON stays readable after Phase 8
   // later deletes the live lobby_messages rows on lobby close.
