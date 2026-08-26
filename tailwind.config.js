@@ -15,6 +15,13 @@ module.exports = {
         },
         secondary: {
           border: 'oklch(0.4731 0.1535 37.42 / <alpha-value>)'
+        },
+        // Sidebar nav link hover state only — active state reuses
+        // primary/primary-foreground directly since the values are
+        // identical, no separate token needed for that one.
+        sidebar: {
+          hover: 'oklch(0.2221 0 0 / <alpha-value>)',
+          'hover-foreground': 'oklch(0.9067 0 0 / <alpha-value>)'
         }
       }
     }
@@ -28,5 +35,7 @@ module.exports = {
   //   background -> background   titles/primary text -> foreground
   //   primary action -> bg-primary, text-primary-foreground
   //   secondary action -> transparent bg, border-secondary-border, text-foreground
+  //   sidebar nav hover -> bg-sidebar-hover, text-sidebar-hover-foreground
+  //   sidebar nav active -> bg-primary, text-primary-foreground
   plugins: []
 }
