@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { NavArrowLeft } from 'iconoir-react'
 import type { AppOutletContext } from '../layout/AppShell'
 import { useSession } from '../lib/session'
 import { supabase } from '../lib/supabase'
 import { searchLobbies } from '../lib/lobby-search'
 import { rankLobbies } from '../lib/lobby-scoring'
 import type { LobbySummary } from '../lib/lobby-summary'
-import LobbyFilterBar, { type LobbyFilterState } from '../components/LobbyFilterBar'
+import LobbyFilterPopover, { type LobbyFilterState } from '../components/LobbyFilterPopover'
 import LobbyCard from '../components/LobbyCard'
+import GameSummaryCard from '../components/GameSummaryCard'
 import CreateThisLobbyCard from '../components/CreateThisLobbyCard'
 
 interface OwnedGame {
@@ -21,10 +23,16 @@ interface SearchContext {
   region: string | null
 }
 
-/** Owned games (for the filter bar's game dropdown, same user_games join
- * games query ProfilePage.tsx already does) plus the profile fields the
- * search needs: languages for the hard filter, region for the default
- * filter value. */
+interface GameSummary {
+  appid: string
+  gameName: string
+  lobbyCount: number
+}
+
+/** Owned games (for the filter popover's game dropdown and the "show only
+ * games you own" toggle, same user_games join games query ProfilePage.tsx
+ * already does) plus the profile fields the search needs: languages for the
+ * hard filter, region for the default filter value. */
 async function loadSearchContext(userId: string): Promise<SearchContext> {
   const [{ data: ownedRows }, { data: profile }] = await Promise.all([
     supabase.from('user_games').select('appid').eq('user_id', userId),
@@ -46,15 +54,18 @@ const DEFAULT_FILTERS: LobbyFilterState = {
   region: null,
   mic: null,
   tone: null,
-  minFreeSlots: 1
+  minFreeSlots: 1,
+  ownedOnly: false
 }
 
 /**
- * Find lobby opens on lobbies, not games. Live lobbies for games the user
- * owns come first (see rankLobbies). Search is scored, not filtered — the
- * only hard filters are the game, a free slot, and language (lobby-search.ts);
- * region/mic/tone only cost points (lobby-scoring.ts) and are shown as
- * mismatch chips on the card, never used to exclude a result.
+ * Find lobby opens on games with open lobbies, not on individual lobbies —
+ * browse as a 5-per-row grid of game cards (cover art, name, lobby count),
+ * pick one to drill into its scored lobby list (LobbyCard). Search is
+ * scored, not filtered — the only hard filters are the game, a free slot,
+ * and language (lobby-search.ts); region/mic/tone only cost points
+ * (lobby-scoring.ts) and are shown as mismatch chips on the lobby card,
+ * never used to exclude a result outright.
  */
 export default function FindLobbyPage() {
   const { openCreateLobby, activeLobby } = useOutletContext<AppOutletContext>()
@@ -116,6 +127,32 @@ export default function FindLobbyPage() {
     [candidates, filters.region, filters.mic, filters.tone, ownedAppids]
   )
 
+  // Browse view: one card per game, not per lobby. "Show only games you
+  // own" filters this grouping, live, off the already-fetched/ranked
+  // results — no extra round trip needed for a toggle this cheap.
+  const gameSummaries = useMemo<GameSummary[]>(() => {
+    const relevant = filters.ownedOnly ? ranked.filter((scored) => ownedAppids.has(scored.lobby.appid)) : ranked
+
+    const byAppid = new Map<string, GameSummary>()
+    for (const scored of relevant) {
+      const existing = byAppid.get(scored.lobby.appid)
+      if (existing) {
+        existing.lobbyCount += 1
+      } else {
+        byAppid.set(scored.lobby.appid, { appid: scored.lobby.appid, gameName: scored.lobby.gameName, lobbyCount: 1 })
+      }
+    }
+
+    // Games the user owns come first, matching the existing "live lobbies
+    // for games the user owns come first" ordering rule.
+    return [...byAppid.values()].sort((a, b) => {
+      const aOwned = ownedAppids.has(a.appid) ? 0 : 1
+      const bOwned = ownedAppids.has(b.appid) ? 0 : 1
+      if (aOwned !== bOwned) return aOwned - bOwned
+      return b.lobbyCount - a.lobbyCount
+    })
+  }, [ranked, filters.ownedOnly, ownedAppids])
+
   async function handleJoin(lobby: LobbySummary): Promise<void> {
     if (!userId) return
     if (activeLobby) {
@@ -137,27 +174,66 @@ export default function FindLobbyPage() {
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
         <h1 className="text-2xl font-semibold text-foreground">Find lobby</h1>
-        <button type="button" className="btn-secondary" onClick={() => openCreateLobby()}>
-          Create lobby
-        </button>
+        <div className="flex items-center gap-2">
+          <LobbyFilterPopover filters={filters} onChange={setFilters} ownedGames={context?.ownedGames ?? []} />
+          <button type="button" className="btn-secondary" onClick={() => openCreateLobby()}>
+            Create lobby
+          </button>
+        </div>
       </div>
 
-      <LobbyFilterBar filters={filters} onChange={setFilters} ownedGames={context?.ownedGames ?? []} />
-
-      {joinError && <p className="px-6 pt-3 text-sm text-red-400">{joinError}</p>}
+      {joinError && <p className="px-6 pb-3 text-sm text-red-400">{joinError}</p>}
 
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {loading ? (
           <p className="text-sm text-neutral-400">Searching…</p>
-        ) : ranked.length === 0 ? (
+        ) : filters.appid ? (
+          <>
+            <button
+              type="button"
+              className="mb-4 inline-flex items-center gap-1 text-sm text-neutral-400 transition-colors hover:text-foreground"
+              onClick={() => setFilters((current) => ({ ...current, appid: null }))}
+            >
+              <NavArrowLeft width={16} height={16} strokeWidth={2} />
+              All games
+            </button>
+
+            {ranked.length === 0 ? (
+              <CreateThisLobbyCard
+                gameName={selectedGameName}
+                region={filters.region}
+                mic={filters.mic}
+                tone={filters.tone}
+                onCreate={() =>
+                  openCreateLobby({
+                    appid: filters.appid ?? undefined,
+                    region: filters.region ?? undefined,
+                    mic: filters.mic ?? undefined,
+                    tone: filters.tone ?? undefined
+                  })
+                }
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {ranked.map((scored) => (
+                  <LobbyCard
+                    key={scored.lobby.id}
+                    scored={scored}
+                    joining={joiningLobbyId === scored.lobby.id}
+                    onJoin={() => void handleJoin(scored.lobby)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        ) : gameSummaries.length === 0 ? (
           <CreateThisLobbyCard
-            gameName={selectedGameName}
+            gameName={null}
             region={filters.region}
             mic={filters.mic}
             tone={filters.tone}
             onCreate={() =>
               openCreateLobby({
-                appid: filters.appid ?? undefined,
                 region: filters.region ?? undefined,
                 mic: filters.mic ?? undefined,
                 tone: filters.tone ?? undefined
@@ -165,13 +241,14 @@ export default function FindLobbyPage() {
             }
           />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {ranked.map((scored) => (
-              <LobbyCard
-                key={scored.lobby.id}
-                scored={scored}
-                joining={joiningLobbyId === scored.lobby.id}
-                onJoin={() => void handleJoin(scored.lobby)}
+          <div className="grid grid-cols-5 gap-4">
+            {gameSummaries.map((game) => (
+              <GameSummaryCard
+                key={game.appid}
+                appid={game.appid}
+                gameName={game.gameName}
+                lobbyCount={game.lobbyCount}
+                onClick={() => setFilters((current) => ({ ...current, appid: game.appid }))}
               />
             ))}
           </div>
