@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Switzer';
+  src: url('./assets/fonts/Switzer-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Switzer';
+  src: url('./assets/fonts/Switzer-VariableItalic.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 @layer base {
   html,
   body,
@@ -12,6 +28,7 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family:
+      'Switzer',
       -apple-system,
       'Segoe UI',
       Ubuntu,
