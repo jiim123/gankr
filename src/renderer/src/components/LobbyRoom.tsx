@@ -35,12 +35,12 @@ async function leaveLobby(lobbyId: string, userId: string): Promise<void> {
 }
 
 /**
- * The floating panel's expanded content: header (thumbnail, lobby name/game/
- * status, a minimize button, Leave lobby) -> scrollable member-card list ->
- * LobbyVisibilityPanel -> chat filling the remaining flexible height. Fills
- * the fixed-size panel FloatingLobbyPanel.tsx gives it entirely (`h-full`),
- * rather than sizing itself, since that panel now owns the expanded/
- * minimized dimensions.
+ * The floating panel's expanded content: one header row (thumbnail, lobby
+ * name/game/status, minimize, Leave lobby), then two columns below it —
+ * members + visibility/requirements on the left, chat filling the full
+ * column height on the right. Fills the fixed-size panel
+ * FloatingLobbyPanel.tsx gives it entirely (`h-full`), rather than sizing
+ * itself, since that panel now owns the expanded/minimized dimensions.
  *
  * Ownership transfer / lobby close on an owner leaving, and the departing
  * client's own panel collapsing, are both already handled by existing
@@ -92,14 +92,13 @@ export default function LobbyRoom({ lobby, currentUserId, onMinimize }: LobbyRoo
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
-        <div className="max-h-56 overflow-y-auto pr-1">
+      <div className="grid min-h-0 flex-1 grid-cols-2 gap-4 p-4">
+        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-1">
           <LobbyMemberList lobby={lobby} currentUserId={currentUserId} onReport={setReportTarget} />
+          <LobbyVisibilityPanel lobby={lobby} isOwner={isOwner} onOpenRequirements={() => setRequirementsOpen(true)} />
         </div>
 
-        <LobbyVisibilityPanel lobby={lobby} isOwner={isOwner} onOpenRequirements={() => setRequirementsOpen(true)} />
-
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0">
           <LobbyChatPanel lobbyId={lobby.id} currentUserId={currentUserId} members={lobby.members} />
         </div>
       </div>
