@@ -3,6 +3,7 @@ import type { LobbySummary, LobbyMemberSummary } from '../lib/lobby-summary'
 import { supabase } from '../lib/supabase'
 import { loadMemberSteamIds } from '../lib/lobby-member-steam-ids'
 import { loadFriendshipStates, sendFriendRequest, type FriendshipState } from '../lib/lobby-friendships'
+import type { LaunchDetectionState } from '../lib/launch-detection'
 import LobbyMemberCard from './LobbyMemberCard'
 
 async function removeMember(lobbyId: string, userId: string): Promise<void> {
@@ -17,6 +18,7 @@ interface LobbyMemberListProps {
   lobby: LobbySummary
   currentUserId: string
   onReport: (member: LobbyMemberSummary) => void
+  launch: LaunchDetectionState
 }
 
 /**
@@ -30,7 +32,7 @@ interface LobbyMemberListProps {
  * automatically via useActiveLobby's existing subscription — no new
  * reactivity needed here.
  */
-export default function LobbyMemberList({ lobby, currentUserId, onReport }: LobbyMemberListProps) {
+export default function LobbyMemberList({ lobby, currentUserId, onReport, launch }: LobbyMemberListProps) {
   const [kickingId, setKickingId] = useState<string | null>(null)
   const [addingFriendId, setAddingFriendId] = useState<string | null>(null)
   const [steamIds, setSteamIds] = useState<Map<string, string>>(new Map())
@@ -98,6 +100,7 @@ export default function LobbyMemberList({ lobby, currentUserId, onReport }: Lobb
           }}
           onReport={() => onReport(member)}
           onKick={() => void handleKick(member.userId)}
+          launch={member.userId === currentUserId ? launch : undefined}
         />
       ))}
     </div>

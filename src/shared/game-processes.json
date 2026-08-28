@@ -1,0 +1,82 @@
+{
+  "730": {
+    "name": "Counter-Strike 2",
+    "windows": {
+      "verified": true,
+      "processNames": ["cs2.exe"],
+      "source": "Confirmed live 2026-08-28 via Get-CimInstance Win32_Process: cs2.exe, command line \"cs2.exe\" -steam +exec autoexec.cfg -novid, no separate launcher process."
+    },
+    "linux": {
+      "verified": false,
+      "processNames": ["cs2"],
+      "source": "Unverified — no Linux test hardware. CS2 has a native Linux build; assumed to match the Windows exe name minus .exe, per Source engine convention."
+    }
+  },
+  "570": {
+    "name": "Dota 2",
+    "windows": {
+      "verified": false,
+      "processNames": ["dota2.exe"],
+      "source": "Unverified — standard Source 2 Windows executable name."
+    },
+    "linux": {
+      "verified": false,
+      "processNames": ["dota2"],
+      "source": "Unverified — Dota 2 has a native Linux build; name assumed from public knowledge, not confirmed live."
+    }
+  },
+  "1172470": {
+    "name": "Apex Legends",
+    "windows": {
+      "verified": false,
+      "processNames": ["r5apex.exe"],
+      "source": "Unverified — publicly documented Source-derived executable name."
+    },
+    "linux": {
+      "verified": false,
+      "processNames": [],
+      "commandLineContains": ["r5apex.exe"],
+      "source": "Unverified — no native Linux build; Proton-only if it runs at all, matched on command line per CLAUDE.md's Proton/Wine guidance. Easy Anti-Cheat may block Proton entirely — low confidence."
+    }
+  },
+  "1085660": {
+    "name": "Destiny 2",
+    "windows": {
+      "verified": false,
+      "processNames": ["destiny2.exe"],
+      "source": "Unverified — publicly documented executable name."
+    },
+    "linux": {
+      "verified": false,
+      "processNames": [],
+      "commandLineContains": ["destiny2.exe"],
+      "source": "Unverified — no official native Linux build, Proton-only, matched on command line for the same reason as Apex Legends."
+    }
+  },
+  "945360": {
+    "name": "Among Us",
+    "windows": {
+      "verified": false,
+      "processNames": ["Among Us.exe"],
+      "source": "Unverified — Unity default naming, product name preserved with a space."
+    },
+    "linux": {
+      "verified": false,
+      "processNames": ["among us.x86_64"],
+      "source": "Unverified — Unity's default Linux build naming (<ProductName>.x86_64); native Linux support for this game has been unreliable, low confidence."
+    }
+  },
+  "427520": {
+    "name": "Factorio",
+    "windows": {
+      "verified": false,
+      "processNames": ["factorio.exe"],
+      "source": "Unverified — standard Windows executable name."
+    },
+    "linux": {
+      "verified": false,
+      "processNames": ["factorio"],
+      "source": "Unverified — Factorio has strong native Linux support; name assumed from public knowledge, not confirmed live."
+    }
+  }
+}

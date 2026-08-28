@@ -6,6 +6,7 @@ import FloatingLobbyPanel from '../components/FloatingLobbyPanel'
 import NotificationToasts from '../components/NotificationToasts'
 import CreateLobbyModal, { type CreateLobbyPrefill } from '../components/CreateLobbyModal'
 import { useActiveLobby } from '../lib/active-lobby'
+import { useLaunchDetection } from '../lib/launch-detection'
 import { useSession } from '../lib/session'
 import { useNotifications, resolveNotificationTarget, type NotificationItem } from '../lib/notifications'
 import type { LobbySummary } from '../lib/lobby-summary'
@@ -30,6 +31,10 @@ export default function AppShell() {
   const { session } = useSession()
   const userId = session?.user.id
   const activeLobby = useActiveLobby(userId)
+  // Mounted here, not inside LobbyRoom — LobbyRoom unmounts whenever the
+  // floating panel is minimized, but an in-progress launch/heartbeat has to
+  // keep polling regardless. Same reasoning as useActiveLobby living here.
+  const launch = useLaunchDetection(activeLobby, userId)
   const navigate = useNavigate()
   const [createLobbyOpen, setCreateLobbyOpen] = useState(false)
   const [createLobbyPrefill, setCreateLobbyPrefill] = useState<CreateLobbyPrefill | null>(null)
@@ -123,6 +128,7 @@ export default function AppShell() {
         currentUserId={userId}
         expanded={dockedExpanded}
         onExpandedChange={setDockedExpanded}
+        launch={launch}
       />
 
       <CreateLobbyModal

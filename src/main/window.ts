@@ -42,7 +42,13 @@ export function createMainWindow(): BrowserWindow {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: false,
+      // Phase 8's launch-detection poll (src/renderer/src/lib/launch-detection.ts)
+      // has to keep firing on its normal interval while the window is hidden
+      // to tray, not throttled down to ~1/minute like a backgrounded browser
+      // tab — this is the fix for "quitting kills the heartbeat" without
+      // needing a second, main-process-owned Supabase session.
+      backgroundThrottling: false
     }
   })
 

@@ -1,8 +1,14 @@
 import { useState } from 'react'
 import { Minus } from 'iconoir-react'
-import { resolveLobbyDisplayName, type LobbySummary, type LobbyMemberSummary } from '../lib/lobby-summary'
+import {
+  resolveLobbyDisplayName,
+  stragglerNames,
+  type LobbySummary,
+  type LobbyMemberSummary
+} from '../lib/lobby-summary'
 import { supabase } from '../lib/supabase'
 import { steamHeaderImageUrl } from '../lib/steam-images'
+import type { LaunchDetectionState } from '../lib/launch-detection'
 import LobbyMemberList from './LobbyMemberList'
 import LobbyVisibilityPanel from './LobbyVisibilityPanel'
 import LobbyRequirementsDialog from './LobbyRequirementsDialog'
@@ -13,6 +19,15 @@ interface LobbyRoomProps {
   lobby: LobbySummary
   currentUserId: string
   onMinimize: () => void
+  launch: LaunchDetectionState
+}
+
+/** "Marcus", "Marcus and Nadia", "Marcus, Nadia, and Theo" — matches
+ * CLAUDE.md's example wording for the straggler line. */
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? ''
+  if (names.length === 2) return `${names[0]} and ${names[1]}`
+  return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`
 }
 
 function labelForStatus(status: LobbySummary['status']): string {
@@ -47,11 +62,14 @@ async function leaveLobby(lobbyId: string, userId: string): Promise<void> {
  * Phase 2/6 logic (handle_member_departure() trigger, useActiveLobby) — no
  * new code needed here beyond the button and the one UPDATE call.
  */
-export default function LobbyRoom({ lobby, currentUserId, onMinimize }: LobbyRoomProps) {
+export default function LobbyRoom({ lobby, currentUserId, onMinimize, launch }: LobbyRoomProps) {
   const [leaving, setLeaving] = useState(false)
   const [reportTarget, setReportTarget] = useState<LobbyMemberSummary | null>(null)
   const [requirementsOpen, setRequirementsOpen] = useState(false)
   const isOwner = lobby.ownerId === currentUserId
+
+  const inGameCount = lobby.members.filter((member) => member.memberState === 'in_game').length
+  const stragglers = stragglerNames(lobby)
 
   async function handleLeave(): Promise<void> {
     setLeaving(true)
@@ -87,14 +105,25 @@ export default function LobbyRoom({ lobby, currentUserId, onMinimize }: LobbyRoo
         >
           <Minus width={16} height={16} strokeWidth={2} />
         </button>
-        <button type="button" className="btn-secondary shrink-0" disabled={leaving} onClick={() => void handleLeave()}>
+        <button
+          type="button"
+          className={launch.promoteLeave ? 'btn-primary shrink-0' : 'btn-secondary shrink-0'}
+          disabled={leaving}
+          onClick={() => void handleLeave()}
+        >
           {leaving ? 'Leaving…' : 'Leave lobby'}
         </button>
       </div>
 
+      {lobby.status === 'open' && inGameCount > 0 && stragglers.length > 0 && (
+        <p className="border-b border-neutral-800 px-4 py-2 text-xs text-neutral-400">
+          Waiting on {joinNames(stragglers)}
+        </p>
+      )}
+
       <div className="grid min-h-0 flex-1 grid-cols-2 gap-4 p-4">
         <div className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-1">
-          <LobbyMemberList lobby={lobby} currentUserId={currentUserId} onReport={setReportTarget} />
+          <LobbyMemberList lobby={lobby} currentUserId={currentUserId} onReport={setReportTarget} launch={launch} />
           <LobbyVisibilityPanel lobby={lobby} isOwner={isOwner} onOpenRequirements={() => setRequirementsOpen(true)} />
         </div>
 

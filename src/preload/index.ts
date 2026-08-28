@@ -66,6 +66,22 @@ const api = {
    * itself. */
   openAddSteamFriend: (steamId64: string) => invoke('steam:open-add-friend', { steamId64 }),
 
+  /** Phase 8: asks main to check the real OS process list for this appid's
+   * known process names (src/shared/game-processes.json). */
+  checkGameProcessRunning: (appid: string) => invoke('game:is-process-running', { appid }),
+
+  /** Opens `steam://rungameid/<appid>`. Main builds and validates the URL —
+   * the renderer never constructs it itself. Does not check whether Steam is
+   * running; call isSteamRunning() first. */
+  launchGame: (appid: string) => invoke('game:launch', { appid }),
+
+  isSteamRunning: () => invoke('steam:is-running', {}),
+
+  /** Dev-machine console mirror of a manual launch-detection override — the
+   * real cross-machine log is the log_manual_launch_override Postgres RPC. */
+  logManualLaunchOverride: (lobbyId: string, appid: string) =>
+    invoke('game:log-manual-override', { lobbyId, appid }),
+
   /** Subscribes to a native notification's click, pushed from
    * src/main/notifications.ts. Returns an unsubscribe function. */
   onNotificationClicked: (callback: (payload: IpcEventSchema['notifications:clicked']) => void) => {

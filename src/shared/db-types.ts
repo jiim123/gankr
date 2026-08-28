@@ -713,6 +713,10 @@ export type Database = {
       }
     }
     Functions: {
+      log_manual_launch_override: {
+        Args: { p_lobby_id: string }
+        Returns: undefined
+      }
       sweep_lobbies: { Args: never; Returns: undefined }
     }
     Enums: {

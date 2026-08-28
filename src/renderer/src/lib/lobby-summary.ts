@@ -10,6 +10,13 @@ export interface LobbyMemberSummary {
   displayName: string
   avatarUrl: string | null
   memberState: Tables<'lobby_members'>['member_state']
+  /** Phase 8: when this member last clicked Start game, and when a real
+   * process was last detected for them. Both null until the launch flow
+   * writes them. Needed by useLaunchDetection to compute the 90s
+   * launch-failure deadline from DB state rather than a fragile local timer
+   * that wouldn't survive an app relaunch mid-launch. */
+  launchClickedAt: string | null
+  gameStartedAt: string | null
 }
 
 /**
@@ -65,7 +72,9 @@ export function buildLobbySummary(
         userId: member.user_id,
         displayName: user?.display_name ?? 'Unknown player',
         avatarUrl: user?.avatar_url ?? null,
-        memberState: member.member_state
+        memberState: member.member_state,
+        launchClickedAt: member.launch_clicked_at,
+        gameStartedAt: member.game_started_at
       }
     })
   }
@@ -85,6 +94,14 @@ export function resolveLobbyDisplayName(lobby: LobbySummary): string {
   if (trimmed) return trimmed
   const owner = lobby.members.find((member) => member.userId === lobby.ownerId)
   return `${owner?.displayName ?? 'Unknown player'}'s lobby`
+}
+
+/** Members not yet `in_game`, for the room's "Waiting on Marcus and Nadia"
+ * line (CLAUDE.md: the card shows progress as a count, the room names the
+ * stragglers). `lobby.members` is already left_at-is-null-filtered, so this
+ * is just the complement of the card's own inGameCount computation. */
+export function stragglerNames(lobby: LobbySummary): string[] {
+  return lobby.members.filter((member) => member.memberState !== 'in_game').map((member) => member.displayName)
 }
 
 export function buildLobbySummaries(

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { LobbySummary } from '../lib/lobby-summary'
 import { supabase } from '../lib/supabase'
+import type { LaunchDetectionState } from '../lib/launch-detection'
 import LobbyRoom from './LobbyRoom'
 import LobbyMinimizedCard from './LobbyMinimizedCard'
 
@@ -9,6 +10,10 @@ interface FloatingLobbyPanelProps {
   currentUserId: string | undefined
   expanded: boolean
   onExpandedChange: (expanded: boolean) => void
+  /** Owned by AppShell (useLaunchDetection lives at that layout level so it
+   * survives minimize) — only threaded into LobbyRoom, the minimized card
+   * stays display-only. */
+  launch: LaunchDetectionState
 }
 
 /**
@@ -26,7 +31,8 @@ export default function FloatingLobbyPanel({
   lobby,
   currentUserId,
   expanded,
-  onExpandedChange
+  onExpandedChange,
+  launch
 }: FloatingLobbyPanelProps) {
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -76,7 +82,12 @@ export default function FloatingLobbyPanel({
         ].join(' ')}
       >
         {expanded ? (
-          <LobbyRoom lobby={lobby} currentUserId={currentUserId} onMinimize={() => onExpandedChange(false)} />
+          <LobbyRoom
+            lobby={lobby}
+            currentUserId={currentUserId}
+            onMinimize={() => onExpandedChange(false)}
+            launch={launch}
+          />
         ) : (
           <LobbyMinimizedCard lobby={lobby} unreadCount={unreadCount} onExpand={() => onExpandedChange(true)} />
         )}

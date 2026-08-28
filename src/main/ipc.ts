@@ -2,6 +2,8 @@ import { app, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse } from '@shared/ipc'
 import { buildSteamOpenIdUrl } from './auth'
 import { buildSteamAddFriendUrl } from './steam-friend'
+import { buildSteamLaunchUrl } from './steam-launch'
+import { isGameProcessRunning, isSteamRunning } from './game-detection'
 import { checkForUpdates, getCurrentUpdateStatus } from './updater'
 import { takePendingAuthCallback } from './protocol'
 import { maybeShowNativeNotification, setBadgeCount } from './notifications'
@@ -51,6 +53,25 @@ const handlers: HandlerMap = {
     if (!url) return { opened: false }
     void shell.openExternal(url)
     return { opened: true }
+  },
+
+  'game:is-process-running': async (request) => ({
+    running: await isGameProcessRunning(request.appid)
+  }),
+
+  'game:launch': (request) => {
+    const url = buildSteamLaunchUrl(request.appid)
+    if (!url) return { opened: false }
+    void shell.openExternal(url)
+    return { opened: true }
+  },
+
+  'steam:is-running': async () => ({ running: await isSteamRunning() }),
+
+  'game:log-manual-override': (request) => {
+    // eslint-disable-next-line no-console
+    console.info('[launch] manual override used', request)
+    return {}
   }
 }
 

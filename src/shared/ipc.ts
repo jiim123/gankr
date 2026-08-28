@@ -106,6 +106,44 @@ export interface IpcSchema {
     request: { steamId64: string }
     response: { opened: boolean }
   }
+
+  /**
+   * Phase 8 launch detection. Main looks up the appid in
+   * src/shared/game-processes.json and checks the real OS process list —
+   * see src/main/game-detection. `running: false` covers both "genuinely
+   * not running" and "no mapping exists for this appid yet".
+   */
+  'game:is-process-running': {
+    request: { appid: string }
+    response: { running: boolean }
+  }
+
+  /**
+   * Opens `steam://rungameid/<appid>` — see buildSteamLaunchUrl() in
+   * src/main/steam-launch.ts, which validates the appid before returning
+   * anything to open. Deliberately does not check whether Steam is running
+   * itself; the renderer calls `steam:is-running` first so it can say so
+   * upfront instead of this silently doing nothing.
+   */
+  'game:launch': {
+    request: { appid: string }
+    response: { opened: boolean }
+  }
+
+  'steam:is-running': {
+    request: Record<string, never>
+    response: { running: boolean }
+  }
+
+  /** Dev-machine mirror of "log every use" for the manual launch-detection
+   * override — the real, cross-machine log is the `log_manual_launch_override`
+   * Postgres RPC (writes a system lobby message), since a main-process
+   * console.log is invisible in a packaged build with no attached terminal.
+   * This just also prints it locally for a dev running from a terminal. */
+  'game:log-manual-override': {
+    request: { lobbyId: string; appid: string }
+    response: Record<string, never>
+  }
 }
 
 /** The state of the background update checker, pushed over
@@ -134,7 +172,11 @@ export const IPC_CHANNELS: IpcChannel[] = [
   'auth:get-pending-callback',
   'notifications:show-native',
   'notifications:set-badge-count',
-  'steam:open-add-friend'
+  'steam:open-add-friend',
+  'game:is-process-running',
+  'game:launch',
+  'steam:is-running',
+  'game:log-manual-override'
 ]
 
 /**

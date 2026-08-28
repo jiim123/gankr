@@ -2,6 +2,7 @@ import { ShieldQuestion } from 'iconoir-react'
 import type { LobbyMemberSummary } from '../lib/lobby-summary'
 import type { Tables } from '@shared/db-types'
 import type { FriendshipState } from '../lib/lobby-friendships'
+import type { LaunchDetectionState } from '../lib/launch-detection'
 
 type MemberState = Tables<'lobby_members'>['member_state']
 
@@ -37,6 +38,10 @@ interface LobbyMemberCardProps {
   onAddOnSteam: () => void
   onReport: () => void
   onKick: () => void
+  /** Only ever passed for the row matching the current user — see
+   * LobbyMemberList, which owns the single useLaunchDetection instance and
+   * only threads it to its own member's row. */
+  launch?: LaunchDetectionState
 }
 
 /**
@@ -59,7 +64,8 @@ export default function LobbyMemberCard({
   onAddFriend,
   onAddOnSteam,
   onReport,
-  onKick
+  onKick,
+  launch
 }: LobbyMemberCardProps) {
   return (
     <div
@@ -84,6 +90,43 @@ export default function LobbyMemberCard({
         <ShieldQuestion width={14} height={14} strokeWidth={2} />
         <span>Reputation not available yet</span>
       </div>
+
+      {isSelf && launch && (member.memberState === 'in_lobby' || member.memberState === 'launch_failed') && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn-primary px-2 py-1 text-xs"
+            onClick={() => void (member.memberState === 'launch_failed' ? launch.retry() : launch.startGame())}
+          >
+            {member.memberState === 'launch_failed' ? 'Retry' : 'Start game'}
+          </button>
+          {member.memberState === 'launch_failed' && (
+            <button
+              type="button"
+              className="btn-secondary px-2 py-1 text-xs"
+              onClick={() => void launch.continueWithoutDetection()}
+            >
+              I&apos;m in, continue without me
+            </button>
+          )}
+          {launch.steamRunning === false && (
+            <span className="text-xs text-neutral-400">Steam isn&apos;t running — start it first</span>
+          )}
+        </div>
+      )}
+
+      {isSelf && launch && member.memberState === 'launching' && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-neutral-400">Launching…</span>
+          <button
+            type="button"
+            className="btn-secondary px-2 py-1 text-xs"
+            onClick={() => void launch.continueWithoutDetection()}
+          >
+            I&apos;m in, continue without me
+          </button>
+        </div>
+      )}
 
       {!isSelf && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
