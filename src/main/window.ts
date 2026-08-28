@@ -14,6 +14,16 @@ export function getMainWindow(): BrowserWindow | null {
   return mainWindow
 }
 
+/** Restores (if minimized), shows, and focuses the main window. Shared by
+ * every "bring the app back to front" call site: the gankr:// protocol
+ * hand-off, the tray's own click/menu, and (Phase 9) clicking a native
+ * notification. */
+export function restoreAndFocus(window: BrowserWindow): void {
+  if (window.isMinimized()) window.restore()
+  window.show()
+  window.focus()
+}
+
 /**
  * Creates the single application window. Closing it hides it instead of
  * quitting (see `src/main/index.ts`), because the app has to keep the

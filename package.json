@@ -57,6 +57,10 @@
       {
         "from": "resources/tray-icon.png",
         "to": "tray-icon.png"
+      },
+      {
+        "from": "resources/notification-dot.png",
+        "to": "notification-dot.png"
       }
     ],
     "win": {

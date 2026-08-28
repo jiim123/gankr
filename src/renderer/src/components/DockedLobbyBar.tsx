@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { LobbySummary } from '../lib/lobby-summary'
 import { supabase } from '../lib/supabase'
 import LobbyRoom from './LobbyRoom'
@@ -6,6 +6,8 @@ import LobbyRoom from './LobbyRoom'
 interface DockedLobbyBarProps {
   lobby: LobbySummary | null
   currentUserId: string | undefined
+  expanded: boolean
+  onExpandedChange: (expanded: boolean) => void
 }
 
 /**
@@ -14,27 +16,17 @@ interface DockedLobbyBarProps {
  * instead of being tied to any one page. Clicking it expands in place into
  * the full Phase 7 lobby room (member list, requirements, chat).
  *
+ * `expanded` is a controlled prop owned by AppShell (Phase 9) rather than
+ * local state, merged there with its own auto-expand-on-new-lobby-id effect
+ * — a notification click needs to be able to drive it too, and that only
+ * works from one shared owner.
+ *
  * "membersReady" from the Phase 3 stub is gone — no "ready" concept exists
  * anywhere in the schema. It's replaced by the same "N of M in game" line
  * used on LobbyCard, which honestly renders nothing until Phase 8 exists.
  */
-export default function DockedLobbyBar({ lobby, currentUserId }: DockedLobbyBarProps) {
-  const [expanded, setExpanded] = useState(false)
-  // `undefined` means "not yet initialized" so the very first render (which
-  // may already have an active lobby, e.g. reopening the app) doesn't
-  // auto-expand — only a join/create that happens *during* this session does.
-  const previousLobbyId = useRef<string | null | undefined>(undefined)
+export default function DockedLobbyBar({ lobby, currentUserId, expanded, onExpandedChange }: DockedLobbyBarProps) {
   const [unreadCount, setUnreadCount] = useState(0)
-
-  useEffect(() => {
-    const currentId = lobby?.id ?? null
-    const previousId = previousLobbyId.current
-    if (previousId !== undefined && currentId !== null && currentId !== previousId) {
-      setExpanded(true)
-    }
-    if (currentId === null) setExpanded(false)
-    previousLobbyId.current = currentId
-  }, [lobby?.id])
 
   // Unread count: only lives here, the only consumer, and only while the
   // room isn't actually open. A second, independent Realtime subscription
@@ -76,7 +68,7 @@ export default function DockedLobbyBar({ lobby, currentUserId }: DockedLobbyBarP
     <div className="shrink-0 border-t border-neutral-800 bg-neutral-900">
       <button
         type="button"
-        onClick={() => setExpanded((value) => !value)}
+        onClick={() => onExpandedChange(!expanded)}
         className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-neutral-800/60"
       >
         <span

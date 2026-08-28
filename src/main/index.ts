@@ -1,5 +1,5 @@
 import { app, BrowserWindow, Menu } from 'electron'
-import { createMainWindow, getMainWindow } from './window'
+import { createMainWindow, getMainWindow, restoreAndFocus } from './window'
 import { createTray } from './tray'
 import { registerIpcHandlers } from './ipc'
 import {
@@ -9,9 +9,15 @@ import {
   setPendingAuthCallback
 } from './protocol'
 import { initUpdater, isUpdateReadyToInstall, quitAndInstallUpdate } from './updater'
+import { initNotifications } from './notifications'
 
 // Must run before app is ready.
 registerGankrProtocol()
+
+// Action Center sometimes needs an AppUserModelID to show a packaged app's
+// native toasts at all; dev-mode toasts without a Start Menu shortcut may
+// still not appear even with this set — see notifications.ts.
+app.setAppUserModelId('com.gankr.app')
 
 let isQuitting = false
 let installingUpdate = false
@@ -32,11 +38,7 @@ function handleProtocolUrl(url: string): void {
   // eslint-disable-next-line no-console
   console.log('[gankr-protocol] received', url)
   const window = getMainWindow()
-  if (window) {
-    if (window.isMinimized()) window.restore()
-    window.show()
-    window.focus()
-  }
+  if (window) restoreAndFocus(window)
 
   const authCallback = parseAuthCallbackUrl(url)
   if (authCallback) {
@@ -59,11 +61,7 @@ if (!gotSingleInstanceLock) {
     if (url) handleProtocolUrl(url)
 
     const window = getMainWindow()
-    if (window) {
-      if (window.isMinimized()) window.restore()
-      window.show()
-      window.focus()
-    }
+    if (window) restoreAndFocus(window)
   })
 
   app.whenReady().then(() => {
@@ -93,6 +91,11 @@ if (!gotSingleInstanceLock) {
     })
 
     createTray(quitApp)
+
+    // Unlike the updater, useful in dev too — there's no packaged-only
+    // dependency here, and the notification pipeline is worth exercising
+    // without a full release build.
+    initNotifications()
 
     if (app.isPackaged) initUpdater()
 

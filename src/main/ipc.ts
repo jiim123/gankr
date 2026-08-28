@@ -3,6 +3,7 @@ import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse } from
 import { buildSteamOpenIdUrl } from './auth'
 import { checkForUpdates, getCurrentUpdateStatus } from './updater'
 import { takePendingAuthCallback } from './protocol'
+import { maybeShowNativeNotification, setBadgeCount } from './notifications'
 
 type Handler<C extends IpcChannel> = (
   request: IpcRequest<C>
@@ -35,7 +36,14 @@ const handlers: HandlerMap = {
 
   'update:get-status': () => getCurrentUpdateStatus(),
 
-  'auth:get-pending-callback': () => takePendingAuthCallback()
+  'auth:get-pending-callback': () => takePendingAuthCallback(),
+
+  'notifications:show-native': (request) => maybeShowNativeNotification(request),
+
+  'notifications:set-badge-count': (request) => {
+    setBadgeCount(request.count)
+    return {}
+  }
 }
 
 /** Registers every declared IPC channel. Throws if the schema and the

@@ -39,6 +39,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcement_reads: {
+        Row: {
+          announcement_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcements: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          target_region: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          target_region?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          target_region?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliments: {
         Row: {
           created_at: string
@@ -298,6 +363,58 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          id: string
+          lobby_id: string | null
+          read_at: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          lobby_id?: string | null
+          read_at?: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          lobby_id?: string | null
+          read_at?: string | null
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_lobby_id_fkey"
+            columns: ["lobby_id"]
+            isOneToOne: false
+            referencedRelation: "lobbies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reports: {
         Row: {
           created_at: string
@@ -504,6 +621,7 @@ export type Database = {
           id: string
           languages: string[]
           last_seen_at: string
+          notification_preferences: Json
           region: string | null
         }
         Insert: {
@@ -513,6 +631,7 @@ export type Database = {
           id: string
           languages?: string[]
           last_seen_at?: string
+          notification_preferences?: Json
           region?: string | null
         }
         Update: {
@@ -522,6 +641,7 @@ export type Database = {
           id?: string
           languages?: string[]
           last_seen_at?: string
+          notification_preferences?: Json
           region?: string | null
         }
         Relationships: []
@@ -560,6 +680,15 @@ export type Database = {
         | "left"
       message_kind: "user" | "system"
       mic_requirement: "required" | "preferred" | "off"
+      notification_type:
+        | "friend_request_received"
+        | "friend_request_accepted"
+        | "lobby_invite"
+        | "lobby_full"
+        | "all_members_ready"
+        | "owner_launched"
+        | "friend_online_in_owned_game"
+        | "announcement"
       profile_visibility: "public" | "private" | "unknown"
     }
     CompositeTypes: {
@@ -704,6 +833,16 @@ export const Constants = {
       ],
       message_kind: ["user", "system"],
       mic_requirement: ["required", "preferred", "off"],
+      notification_type: [
+        "friend_request_received",
+        "friend_request_accepted",
+        "lobby_invite",
+        "lobby_full",
+        "all_members_ready",
+        "owner_launched",
+        "friend_online_in_owned_game",
+        "announcement",
+      ],
       profile_visibility: ["public", "private", "unknown"],
     },
   },

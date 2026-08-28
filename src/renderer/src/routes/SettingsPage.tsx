@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { UpdateStatus } from '@shared/ipc'
+import type { Json } from '@shared/db-types'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../lib/session'
 import { LANGUAGES, REGIONS } from '../lib/lobby-options'
+import {
+  TOGGLEABLE_NOTIFICATION_TYPES,
+  labelForNotificationType,
+  type NotificationType
+} from '../lib/notifications'
 
 function describeUpdateStatus(status: UpdateStatus | null): string {
   if (!status) return 'Checking for updates.'
@@ -27,6 +33,21 @@ interface ProfileFields {
   avatarUrl: string | null
   region: string | null
   languages: string[]
+  notificationPreferences: Partial<Record<NotificationType, boolean>>
+}
+
+/** `notification_preferences` is a jsonb column with an opt-out contract
+ * (see the Phase 9 migration): an absent key or `true` means enabled, only
+ * an explicit `false` means disabled. Narrows the raw `Json` value down to
+ * just the boolean entries this app ever writes, ignoring anything else a
+ * stray write might have put there. */
+function parseNotificationPreferences(raw: Json | null | undefined): Partial<Record<NotificationType, boolean>> {
+  const result: Partial<Record<NotificationType, boolean>> = {}
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return result
+  for (const [key, value] of Object.entries(raw)) {
+    if (typeof value === 'boolean') result[key as NotificationType] = value
+  }
+  return result
 }
 
 /** Same loadProfile/useCallback+useEffect pattern ProfilePage.tsx already
@@ -35,14 +56,15 @@ interface ProfileFields {
 async function loadProfileFields(userId: string): Promise<ProfileFields> {
   const { data } = await supabase
     .from('users')
-    .select('display_name, avatar_url, region, languages')
+    .select('display_name, avatar_url, region, languages, notification_preferences')
     .eq('id', userId)
     .maybeSingle()
   return {
     displayName: data?.display_name ?? null,
     avatarUrl: data?.avatar_url ?? null,
     region: data?.region ?? null,
-    languages: data?.languages ?? []
+    languages: data?.languages ?? [],
+    notificationPreferences: parseNotificationPreferences(data?.notification_preferences)
   }
 }
 
@@ -58,11 +80,14 @@ export default function SettingsPage() {
     displayName: null,
     avatarUrl: null,
     region: null,
-    languages: []
+    languages: [],
+    notificationPreferences: {}
   })
   const [profileLoading, setProfileLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [notifSaving, setNotifSaving] = useState(false)
+  const [notifSaved, setNotifSaved] = useState(false)
 
   const refreshProfile = useCallback(async () => {
     if (!session) {
@@ -130,6 +155,42 @@ export default function SettingsPage() {
       setSaved(true)
     } finally {
       setSaving(false)
+    }
+  }
+
+  function toggleNotificationType(type: NotificationType) {
+    setNotifSaved(false)
+    setProfile((current) => {
+      const enabled = current.notificationPreferences[type] !== false
+      const updated = { ...current.notificationPreferences }
+      if (enabled) {
+        // Disabling writes an explicit false.
+        updated[type] = false
+      } else {
+        // Re-enabling removes the key entirely — omitted means enabled,
+        // matching the storage contract exactly rather than writing `true`.
+        delete updated[type]
+      }
+      return { ...current, notificationPreferences: updated }
+    })
+  }
+
+  async function handleSaveNotificationPreferences() {
+    if (!session) return
+    setNotifSaving(true)
+    try {
+      // Only explicit false entries are persisted — an omitted key already
+      // means enabled, so writing `true` for every other type would be
+      // redundant against the contract every reader (including the
+      // lobby_full trigger) relies on.
+      const toPersist: Partial<Record<NotificationType, boolean>> = {}
+      for (const type of TOGGLEABLE_NOTIFICATION_TYPES) {
+        if (profile.notificationPreferences[type] === false) toPersist[type] = false
+      }
+      await supabase.from('users').update({ notification_preferences: toPersist }).eq('id', session.user.id)
+      setNotifSaved(true)
+    } finally {
+      setNotifSaving(false)
     }
   }
 
@@ -216,6 +277,53 @@ export default function SettingsPage() {
               {saving ? 'Saving…' : 'Save'}
             </button>
             {saved && <span className="text-sm text-emerald-400">Saved.</span>}
+          </div>
+        </section>
+
+        <section className="surface p-4">
+          <h2 className="text-sm font-medium text-foreground">Notifications</h2>
+          <p className="mt-1 text-sm text-neutral-400">
+            Choose which notifications Gankr sends you. Turning one off stops it at the
+            source — no row, no badge, no toast, no popup.
+          </p>
+
+          <div className="mt-3 divide-y divide-neutral-800">
+            {TOGGLEABLE_NOTIFICATION_TYPES.map((type) => {
+              const enabled = profile.notificationPreferences[type] !== false
+              return (
+                <div key={type} className="flex items-center justify-between gap-3 py-2">
+                  <span className="text-sm text-foreground">{labelForNotificationType(type)}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleNotificationType(type)}
+                    className={[
+                      'rounded-full border px-3 py-1 text-xs transition-colors',
+                      enabled
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-neutral-800 bg-neutral-900 text-neutral-300 hover:bg-neutral-800'
+                    ].join(' ')}
+                  >
+                    {enabled ? 'On' : 'Off'}
+                  </button>
+                </div>
+              )
+            })}
+            <div className="flex items-center justify-between gap-3 py-2">
+              <span className="text-sm text-neutral-400">Announcements</span>
+              <span className="text-xs text-neutral-500">Always on, shown in-app only.</span>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center gap-3">
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => void handleSaveNotificationPreferences()}
+              disabled={notifSaving || profileLoading}
+            >
+              {notifSaving ? 'Saving…' : 'Save'}
+            </button>
+            {notifSaved && <span className="text-sm text-emerald-400">Saved.</span>}
           </div>
         </section>
 

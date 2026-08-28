@@ -51,6 +51,27 @@ const api = {
     return () => {
       ipcRenderer.removeListener('update:status-changed', listener)
     }
+  },
+
+  /** Asks main to consider showing a native OS notification. Main is the
+   * sole authority on whether it actually appears — see
+   * src/main/notifications.ts. */
+  showNativeNotification: (request: IpcRequest<'notifications:show-native'>) =>
+    invoke('notifications:show-native', request),
+
+  setBadgeCount: (count: number) => invoke('notifications:set-badge-count', { count }),
+
+  /** Subscribes to a native notification's click, pushed from
+   * src/main/notifications.ts. Returns an unsubscribe function. */
+  onNotificationClicked: (callback: (payload: IpcEventSchema['notifications:clicked']) => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      payload: IpcEventSchema['notifications:clicked']
+    ): void => callback(payload)
+    ipcRenderer.on('notifications:clicked', listener)
+    return () => {
+      ipcRenderer.removeListener('notifications:clicked', listener)
+    }
   }
 }
 

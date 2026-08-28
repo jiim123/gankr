@@ -1,6 +1,6 @@
 import { app, Menu, Tray, nativeImage } from 'electron'
 import { join } from 'path'
-import { getMainWindow } from './window'
+import { getMainWindow, restoreAndFocus } from './window'
 
 let tray: Tray | null = null
 
@@ -45,7 +45,5 @@ export function createTray(onQuit: () => void): Tray {
 function showMainWindow(): void {
   const window = getMainWindow()
   if (!window) return
-  if (window.isMinimized()) window.restore()
-  window.show()
-  window.focus()
+  restoreAndFocus(window)
 }

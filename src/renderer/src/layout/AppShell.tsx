@@ -1,11 +1,13 @@
-import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Outlet, useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
 import DockedLobbyBar from '../components/DockedLobbyBar'
+import NotificationToasts from '../components/NotificationToasts'
 import CreateLobbyModal, { type CreateLobbyPrefill } from '../components/CreateLobbyModal'
 import { useActiveLobby } from '../lib/active-lobby'
 import { useSession } from '../lib/session'
+import { useNotifications, resolveNotificationTarget, type NotificationItem } from '../lib/notifications'
 import type { LobbySummary } from '../lib/lobby-summary'
 
 /** Handed to every routed page via <Outlet context> so Find lobby (and any
@@ -26,15 +28,77 @@ export interface AppOutletContext {
  */
 export default function AppShell() {
   const { session } = useSession()
-  const activeLobby = useActiveLobby(session?.user.id)
-  const [unreadCount] = useState(3)
+  const userId = session?.user.id
+  const activeLobby = useActiveLobby(userId)
+  const navigate = useNavigate()
   const [createLobbyOpen, setCreateLobbyOpen] = useState(false)
   const [createLobbyPrefill, setCreateLobbyPrefill] = useState<CreateLobbyPrefill | null>(null)
+
+  const { items, unreadCount, actorNames, gameNames, toasts, dismissToast, markRead } = useNotifications(userId)
+
+  // Docked lobby bar's expand state, lifted up here (Phase 9) so a
+  // notification click can drive it alongside the bar's own toggle button.
+  // `dockedExpanded` starts collapsed; this effect auto-expands it exactly
+  // when the active lobby id *changes* to a new non-null value during this
+  // session (a join or create), never on the very first render — that's
+  // what the `undefined` sentinel below guards against, since the first
+  // render may already have an active lobby (e.g. reopening the app).
+  const [dockedExpanded, setDockedExpanded] = useState(false)
+  const previousLobbyId = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    const currentId = activeLobby?.id ?? null
+    const previousId = previousLobbyId.current
+    if (previousId !== undefined && currentId !== null && currentId !== previousId) {
+      setDockedExpanded(true)
+    }
+    if (currentId === null) setDockedExpanded(false)
+    previousLobbyId.current = currentId
+  }, [activeLobby?.id])
 
   function openCreateLobby(prefill?: CreateLobbyPrefill): void {
     setCreateLobbyPrefill(prefill ?? null)
     setCreateLobbyOpen(true)
   }
+
+  /** Shared by a bell-panel click, a toast click, and a native notification
+   * click (see the effect below) — marks the item read, then routes to
+   * wherever that type's target resolves: expands the docked lobby bar for
+   * the three lobby-scoped types, navigates for friend/invite types, or
+   * does nothing for an announcement. */
+  function handleNotificationClick(item: NotificationItem): void {
+    void markRead(item)
+    const target = resolveNotificationTarget(item.type)
+    if (target.kind === 'expand-docked-lobby') {
+      setDockedExpanded(true)
+    } else if (target.kind === 'route') {
+      navigate(target.path)
+    }
+  }
+
+  // A native OS notification's click (see src/main/notifications.ts) pushes
+  // this event instead of calling back through the in-app panel — it only
+  // ever fires for `notifications`-sourced items (main never shows a native
+  // popup for an announcement), so the reconstructed item's announcement-only
+  // fields (body, createdAt) are unused by handleNotificationClick's logic.
+  useEffect(() => {
+    return window.gankr.onNotificationClicked((payload) => {
+      handleNotificationClick({
+        id: payload.notificationId,
+        source: 'notification',
+        type: payload.type,
+        actorId: null,
+        lobbyId: payload.lobbyId,
+        body: null,
+        isRead: false,
+        createdAt: new Date().toISOString()
+      })
+    })
+    // Re-subscribes if markRead or navigate identity changes (e.g. a
+    // different signed-in user), so the listener never closes over a stale
+    // markRead — handleNotificationClick itself isn't memoized, so it isn't
+    // listed here directly; it's recreated fresh on every render and this
+    // effect's own deps are what decide whether to re-subscribe.
+  }, [markRead, navigate])
 
   const outletContext: AppOutletContext = { openCreateLobby, activeLobby }
 
@@ -43,16 +107,21 @@ export default function AppShell() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar
+          items={items}
           unreadCount={unreadCount}
-          onOpenInvites={() => {
-            // Notifications panel is not built yet (Phase 9).
-            console.log('open invites and notifications')
-          }}
+          actorNames={actorNames}
+          gameNames={gameNames}
+          onNotificationClick={handleNotificationClick}
         />
         <main className="min-h-0 flex-1 overflow-y-auto">
           <Outlet context={outletContext} />
         </main>
-        <DockedLobbyBar lobby={activeLobby} currentUserId={session?.user.id} />
+        <DockedLobbyBar
+          lobby={activeLobby}
+          currentUserId={userId}
+          expanded={dockedExpanded}
+          onExpandedChange={setDockedExpanded}
+        />
       </div>
 
       <CreateLobbyModal
@@ -60,6 +129,14 @@ export default function AppShell() {
         prefill={createLobbyPrefill}
         activeLobby={activeLobby}
         onClose={() => setCreateLobbyOpen(false)}
+      />
+
+      <NotificationToasts
+        toasts={toasts}
+        actorNames={actorNames}
+        gameNames={gameNames}
+        onDismiss={dismissToast}
+        onItemClick={handleNotificationClick}
       />
     </div>
   )

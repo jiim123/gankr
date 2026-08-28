@@ -11,6 +11,13 @@
  * placeholder that proves the plumbing works end to end.
  */
 
+import type { Enums } from './db-types'
+
+/** The `notifications.type` enum, re-exported here so both sides of the IPC
+ * boundary (and src/main/notifications.ts, which has no other reason to
+ * import db-types) can reference it without reaching past @shared. */
+export type NotificationType = Enums<'notification_type'>
+
 export interface IpcSchema {
   'app:ping': {
     request: { message: string }
@@ -57,6 +64,36 @@ export interface IpcSchema {
     request: Record<string, never>
     response: IpcEventSchema['auth:callback'] | null
   }
+
+  /**
+   * Asks main to consider showing a native OS notification for one item
+   * from the renderer's unified notification feed. Main is the sole
+   * authority on whether it actually appears — see
+   * `shouldShowNative`/`maybeShowNativeNotification` in
+   * src/main/notifications.ts — because only main knows the window's real
+   * focus state. `shown: false` covers both "window is focused, in-app
+   * toast already covers it" and "type is announcement, in-app only by
+   * spec, regardless of focus".
+   */
+  'notifications:show-native': {
+    request: {
+      notificationId: string
+      type: NotificationType
+      title: string
+      body: string
+      lobbyId: string | null
+    }
+    response: { shown: boolean }
+  }
+
+  /** Sets the unread badge: a real number on Linux
+   * (`app.setBadgeCount`), a static "unread" dot overlay on the taskbar
+   * icon on Windows (no numbered-badge equivalent there — see
+   * src/main/notifications.ts). `count <= 0` clears it on both platforms. */
+  'notifications:set-badge-count': {
+    request: { count: number }
+    response: Record<string, never>
+  }
 }
 
 /** The state of the background update checker, pushed over
@@ -82,7 +119,9 @@ export const IPC_CHANNELS: IpcChannel[] = [
   'app:get-version',
   'app:check-for-updates',
   'update:get-status',
-  'auth:get-pending-callback'
+  'auth:get-pending-callback',
+  'notifications:show-native',
+  'notifications:set-badge-count'
 ]
 
 /**
@@ -99,6 +138,13 @@ export interface IpcEventSchema {
   /** Pushed whenever the background update checker's state changes — see
    * `src/main/updater.ts`. */
   'update:status-changed': UpdateStatus
+
+  /** Pushed when the user clicks a native notification main showed on its
+   * own initiative (see `maybeShowNativeNotification` in
+   * src/main/notifications.ts). The renderer's notifications.ts uses this
+   * to mark the item read and route to the right place, the same handling
+   * a click inside NotificationBell's in-app panel gets. */
+  'notifications:clicked': { notificationId: string; type: NotificationType; lobbyId: string | null }
 }
 
 export type IpcEventChannel = keyof IpcEventSchema
