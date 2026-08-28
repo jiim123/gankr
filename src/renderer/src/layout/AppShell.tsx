@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
-import DockedLobbyBar from '../components/DockedLobbyBar'
+import FloatingLobbyPanel from '../components/FloatingLobbyPanel'
 import NotificationToasts from '../components/NotificationToasts'
 import CreateLobbyModal, { type CreateLobbyPrefill } from '../components/CreateLobbyModal'
 import { useActiveLobby } from '../lib/active-lobby'
@@ -116,13 +116,14 @@ export default function AppShell() {
         <main className="min-h-0 flex-1 overflow-y-auto">
           <Outlet context={outletContext} />
         </main>
-        <DockedLobbyBar
-          lobby={activeLobby}
-          currentUserId={userId}
-          expanded={dockedExpanded}
-          onExpandedChange={setDockedExpanded}
-        />
       </div>
+
+      <FloatingLobbyPanel
+        lobby={activeLobby}
+        currentUserId={userId}
+        expanded={dockedExpanded}
+        onExpandedChange={setDockedExpanded}
+      />
 
       <CreateLobbyModal
         open={createLobbyOpen}

@@ -1,6 +1,7 @@
 import { app, ipcMain, shell } from 'electron'
 import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse } from '@shared/ipc'
 import { buildSteamOpenIdUrl } from './auth'
+import { buildSteamAddFriendUrl } from './steam-friend'
 import { checkForUpdates, getCurrentUpdateStatus } from './updater'
 import { takePendingAuthCallback } from './protocol'
 import { maybeShowNativeNotification, setBadgeCount } from './notifications'
@@ -43,6 +44,13 @@ const handlers: HandlerMap = {
   'notifications:set-badge-count': (request) => {
     setBadgeCount(request.count)
     return {}
+  },
+
+  'steam:open-add-friend': (request) => {
+    const url = buildSteamAddFriendUrl(request.steamId64)
+    if (!url) return { opened: false }
+    void shell.openExternal(url)
+    return { opened: true }
   }
 }
 

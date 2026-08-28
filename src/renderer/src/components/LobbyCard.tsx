@@ -6,6 +6,12 @@ interface LobbyCardProps {
   scored: ScoredLobby
   onJoin: () => void
   joining: boolean
+  /** The current user's own request state for a private lobby — irrelevant
+   * for an open one. 'none' means no request exists yet (or the lobby is
+   * open). 'denied' stays clickable: re-requesting is allowed, only a
+   * concurrent *pending* request is blocked (see the partial unique index
+   * on lobby_join_requests). */
+  joinRequestState: 'none' | 'pending' | 'denied'
 }
 
 function labelForMic(mic: string): string {
@@ -28,12 +34,28 @@ function labelForMic(mic: string): string {
  * only renders when inGameCount > 0: structurally correct per spec, but it
  * will never actually render until Phase 8 adds real launch detection.
  */
-export default function LobbyCard({ scored, onJoin, joining }: LobbyCardProps) {
+export default function LobbyCard({ scored, onJoin, joining, joinRequestState }: LobbyCardProps) {
   const [imageFailed, setImageFailed] = useState(false)
   const { lobby, reasons } = scored
 
   const memberCount = lobby.members.length
   const inGameCount = lobby.members.filter((member) => member.memberState === 'in_game').length
+
+  const isPrivate = lobby.visibility === 'private'
+  const buttonDisabled = lobby.locked || joining || joinRequestState === 'pending'
+  const buttonLabel = lobby.locked
+    ? 'Locked'
+    : isPrivate
+      ? joinRequestState === 'pending'
+        ? 'Requested'
+        : joinRequestState === 'denied'
+          ? 'Request denied'
+          : joining
+            ? 'Requesting…'
+            : 'Request to join'
+      : joining
+        ? 'Joining…'
+        : 'Join'
 
   return (
     <div className="surface flex flex-col overflow-hidden">
@@ -93,13 +115,8 @@ export default function LobbyCard({ scored, onJoin, joining }: LobbyCardProps) {
             )}
           </div>
 
-          <button
-            type="button"
-            className="btn-primary"
-            disabled={lobby.locked || joining}
-            onClick={onJoin}
-          >
-            {lobby.locked ? 'Locked' : joining ? 'Joining…' : 'Join'}
+          <button type="button" className="btn-primary" disabled={buttonDisabled} onClick={onJoin}>
+            {buttonLabel}
           </button>
         </div>
       </div>

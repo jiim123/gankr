@@ -61,6 +61,11 @@ const api = {
 
   setBadgeCount: (count: number) => invoke('notifications:set-badge-count', { count }),
 
+  /** Opens the per-member "Add on Steam" handoff. Main builds and validates
+   * the `steam://friends/add/<id>` URL — the renderer never constructs it
+   * itself. */
+  openAddSteamFriend: (steamId64: string) => invoke('steam:open-add-friend', { steamId64 }),
+
   /** Subscribes to a native notification's click, pushed from
    * src/main/notifications.ts. Returns an unsubscribe function. */
   onNotificationClicked: (callback: (payload: IpcEventSchema['notifications:clicked']) => void) => {

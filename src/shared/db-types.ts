@@ -220,10 +220,12 @@ export type Database = {
           locked: boolean
           max_members: number
           mic: Database["public"]["Enums"]["mic_requirement"]
+          name: string | null
           owner_id: string
           region: string
           status: Database["public"]["Enums"]["lobby_status"]
           tone: Database["public"]["Enums"]["lobby_tone"]
+          visibility: Database["public"]["Enums"]["lobby_visibility"]
         }
         Insert: {
           appid: string
@@ -234,10 +236,12 @@ export type Database = {
           locked?: boolean
           max_members: number
           mic?: Database["public"]["Enums"]["mic_requirement"]
+          name?: string | null
           owner_id: string
           region: string
           status?: Database["public"]["Enums"]["lobby_status"]
           tone?: Database["public"]["Enums"]["lobby_tone"]
+          visibility?: Database["public"]["Enums"]["lobby_visibility"]
         }
         Update: {
           appid?: string
@@ -248,10 +252,12 @@ export type Database = {
           locked?: boolean
           max_members?: number
           mic?: Database["public"]["Enums"]["mic_requirement"]
+          name?: string | null
           owner_id?: string
           region?: string
           status?: Database["public"]["Enums"]["lobby_status"]
           tone?: Database["public"]["Enums"]["lobby_tone"]
+          visibility?: Database["public"]["Enums"]["lobby_visibility"]
         }
         Relationships: [
           {
@@ -264,6 +270,48 @@ export type Database = {
           {
             foreignKeyName: "lobbies_owner_id_fkey"
             columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lobby_join_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          id: string
+          lobby_id: string
+          status: Database["public"]["Enums"]["join_request_status"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          lobby_id: string
+          status?: Database["public"]["Enums"]["join_request_status"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          lobby_id?: string
+          status?: Database["public"]["Enums"]["join_request_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lobby_join_requests_lobby_id_fkey"
+            columns: ["lobby_id"]
+            isOneToOne: false
+            referencedRelation: "lobbies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lobby_join_requests_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -670,8 +718,10 @@ export type Database = {
     Enums: {
       friendship_status: "pending" | "accepted" | "blocked"
       game_source: "steam" | "manual"
+      join_request_status: "pending" | "accepted" | "denied"
       lobby_status: "open" | "playing" | "closed"
       lobby_tone: "casual" | "competitive"
+      lobby_visibility: "open" | "private"
       member_state:
         | "in_lobby"
         | "launching"
@@ -822,8 +872,10 @@ export const Constants = {
     Enums: {
       friendship_status: ["pending", "accepted", "blocked"],
       game_source: ["steam", "manual"],
+      join_request_status: ["pending", "accepted", "denied"],
       lobby_status: ["open", "playing", "closed"],
       lobby_tone: ["casual", "competitive"],
+      lobby_visibility: ["open", "private"],
       member_state: [
         "in_lobby",
         "launching",

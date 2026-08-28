@@ -94,6 +94,18 @@ export interface IpcSchema {
     request: { count: number }
     response: Record<string, never>
   }
+
+  /**
+   * Opens the per-member "Add on Steam" handoff (Phase 11). Main constructs
+   * `steam://friends/add/<id>`, never the renderer — see
+   * buildSteamAddFriendUrl() in src/main/steam-friend.ts, which validates
+   * the id shape before returning anything to open. `opened: false` means
+   * the id failed validation and nothing was opened.
+   */
+  'steam:open-add-friend': {
+    request: { steamId64: string }
+    response: { opened: boolean }
+  }
 }
 
 /** The state of the background update checker, pushed over
@@ -121,7 +133,8 @@ export const IPC_CHANNELS: IpcChannel[] = [
   'update:get-status',
   'auth:get-pending-callback',
   'notifications:show-native',
-  'notifications:set-badge-count'
+  'notifications:set-badge-count',
+  'steam:open-add-friend'
 ]
 
 /**

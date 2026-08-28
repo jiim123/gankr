@@ -33,6 +33,8 @@ export interface LobbySummary {
   languages: string[]
   createdAt: string
   members: LobbyMemberSummary[]
+  name: string | null
+  visibility: LobbyRow['visibility']
 }
 
 export function buildLobbySummary(
@@ -55,6 +57,8 @@ export function buildLobbySummary(
     locked: lobby.locked,
     languages: lobby.languages,
     createdAt: lobby.created_at,
+    name: lobby.name,
+    visibility: lobby.visibility,
     members: members.map((member) => {
       const user = usersById.get(member.user_id)
       return {
@@ -65,6 +69,22 @@ export function buildLobbySummary(
       }
     })
   }
+}
+
+/**
+ * A lobby's display name: the owner's trimmed `name`, falling back to
+ * "<owner>'s lobby" when unset — not a purely derived string, since the
+ * owner can set a real one in the Requirements dialog. The owner's name is
+ * read off `lobby.members` rather than a separate lookup: the owner is
+ * always an active member per handle_member_departure() (ownership
+ * transfers to the next member, or the lobby closes, the moment the owner
+ * would otherwise be absent), so no new field is needed to resolve it.
+ */
+export function resolveLobbyDisplayName(lobby: LobbySummary): string {
+  const trimmed = lobby.name?.trim()
+  if (trimmed) return trimmed
+  const owner = lobby.members.find((member) => member.userId === lobby.ownerId)
+  return `${owner?.displayName ?? 'Unknown player'}'s lobby`
 }
 
 export function buildLobbySummaries(

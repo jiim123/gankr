@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { SendDiagonal } from 'iconoir-react'
 import { CHAT_BODY_CAP, useLobbyChat } from '../lib/lobby-chat'
 import type { LobbyMemberSummary } from '../lib/lobby-summary'
 
@@ -13,9 +14,10 @@ interface LobbyChatPanelProps {
 
 /**
  * System messages render centered/muted, no bubble. User messages render
- * left-aligned with a name label above a surface-toned bubble. Auto-scroll
- * to bottom only when already near the bottom before a new message arrives
- * — standard "don't yank the scroll position" chat UX.
+ * flat — avatar, name, plain body text, no bubble either, matching the
+ * redesign's Discord-style request. Auto-scroll to bottom only when already
+ * near the bottom before a new message arrives — standard "don't yank the
+ * scroll position" chat UX.
  */
 export default function LobbyChatPanel({ lobbyId, currentUserId, members }: LobbyChatPanelProps) {
   const { messages, sendMessage, sending, error } = useLobbyChat(lobbyId, currentUserId, members)
@@ -63,41 +65,49 @@ export default function LobbyChatPanel({ lobbyId, currentUserId, members }: Lobb
               {message.body}
             </p>
           ) : (
-            <div key={message.id} className="max-w-[85%]">
-              <span className="text-xs text-neutral-400">{message.senderDisplayName}</span>
-              <div className="surface mt-0.5 px-3 py-2 text-sm text-foreground">{message.body}</div>
+            <div key={message.id} className="flex items-start gap-2">
+              {message.senderAvatarUrl ? (
+                <img src={message.senderAvatarUrl} alt="" className="h-6 w-6 shrink-0 rounded-full" />
+              ) : (
+                <div className="h-6 w-6 shrink-0 rounded-full bg-neutral-700" aria-hidden="true" />
+              )}
+              <div className="min-w-0">
+                <span className="text-xs text-neutral-400">{message.senderDisplayName}</span>
+                <p className="text-sm text-foreground">{message.body}</p>
+              </div>
             </div>
           )
         )}
       </div>
 
       <div className="mt-3">
-        <textarea
-          className="field w-full resize-none"
-          rows={2}
-          value={draft}
-          maxLength={CHAT_BODY_CAP}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Message the lobby"
-        />
+        <div className="relative">
+          <textarea
+            className="field w-full resize-none pr-10"
+            rows={2}
+            value={draft}
+            maxLength={CHAT_BODY_CAP}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Message the lobby"
+          />
+          <button
+            type="button"
+            className="absolute bottom-2 right-2 rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={sending || draft.trim().length === 0}
+            onClick={() => void handleSend()}
+            aria-label="Send message"
+          >
+            <SendDiagonal width={16} height={16} strokeWidth={2} />
+          </button>
+        </div>
         <div className="mt-1 flex items-center justify-between">
           <span className="text-xs text-red-400">{error ?? ''}</span>
-          <div className="flex items-center gap-3">
-            {draft.length > COUNTER_THRESHOLD && (
-              <span className="text-xs text-neutral-500">
-                {draft.length}/{CHAT_BODY_CAP}
-              </span>
-            )}
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={sending || draft.trim().length === 0}
-              onClick={() => void handleSend()}
-            >
-              Send
-            </button>
-          </div>
+          {draft.length > COUNTER_THRESHOLD && (
+            <span className="text-xs text-neutral-500">
+              {draft.length}/{CHAT_BODY_CAP}
+            </span>
+          )}
         </div>
       </div>
     </div>

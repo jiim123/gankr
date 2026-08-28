@@ -44,9 +44,8 @@ export default function LobbyRequirementsPanel({ lobby, isOwner }: LobbyRequirem
 
   if (!isOwner) {
     return (
-      <div className="surface p-4">
-        <h3 className="text-sm font-medium text-foreground">Requirements</h3>
-        <dl className="mt-3 space-y-2 text-sm">
+      <div>
+        <dl className="space-y-2 text-sm">
           <div className="flex justify-between">
             <dt className="text-neutral-400">Region</dt>
             <dd className="text-neutral-200">{lobby.region}</dd>
@@ -73,9 +72,8 @@ export default function LobbyRequirementsPanel({ lobby, isOwner }: LobbyRequirem
   }
 
   return (
-    <div className="surface p-4">
-      <h3 className="text-sm font-medium text-foreground">Requirements</h3>
-      <div className="mt-3 space-y-3">
+    <div>
+      <div className="space-y-3">
         <label className="block text-xs text-neutral-400">
           Region
           <select

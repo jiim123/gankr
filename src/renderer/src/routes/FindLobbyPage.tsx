@@ -8,6 +8,7 @@ import { searchLobbies } from '../lib/lobby-search'
 import { rankLobbies } from '../lib/lobby-scoring'
 import type { LobbySummary } from '../lib/lobby-summary'
 import { loadPopularGames, type PopularGame } from '../lib/game-popularity'
+import { loadOwnJoinRequestStates, requestToJoinLobby } from '../lib/lobby-join-requests'
 import LobbyFilterPopover, { type LobbyFilterState } from '../components/LobbyFilterPopover'
 import LobbyCard from '../components/LobbyCard'
 import GameSummaryCard from '../components/GameSummaryCard'
@@ -87,6 +88,8 @@ export default function FindLobbyPage() {
   const [popularHasMore, setPopularHasMore] = useState(false)
   const [loadingPopular, setLoadingPopular] = useState(false)
 
+  const [joinRequestStates, setJoinRequestStates] = useState<Map<string, 'none' | 'pending' | 'denied'>>(new Map())
+
   const userId = session?.user.id
 
   useEffect(() => {
@@ -165,6 +168,27 @@ export default function FindLobbyPage() {
     [candidates, filters.region, filters.mic, filters.tone, ownedAppids]
   )
 
+  // Own join-request state (pending/denied) per private lobby currently in
+  // view, so LobbyCard can show "Requested"/"Request denied" instead of a
+  // dead-end "Request to join" — refetched whenever the candidate set
+  // changes (a new search, or Realtime bringing in a different lobby).
+  useEffect(() => {
+    if (!userId || candidates.length === 0) {
+      setJoinRequestStates(new Map())
+      return
+    }
+    let cancelled = false
+    void loadOwnJoinRequestStates(
+      userId,
+      candidates.map((lobby) => lobby.id)
+    ).then((result) => {
+      if (!cancelled) setJoinRequestStates(result)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [userId, candidates])
+
   // How many currently-scored lobbies each game has — looked up by both the
   // popular-games grid and the owned-games grid, not recomputed per card.
   const lobbyCountByAppid = useMemo(() => {
@@ -196,8 +220,17 @@ export default function FindLobbyPage() {
     }
     setJoiningLobbyId(lobby.id)
     setJoinError(null)
-    const { error } = await supabase.from('lobby_members').insert({ lobby_id: lobby.id, user_id: userId })
-    if (error) setJoinError(error.message)
+    if (lobby.visibility === 'open') {
+      const { error } = await supabase.from('lobby_members').insert({ lobby_id: lobby.id, user_id: userId })
+      if (error) setJoinError(error.message)
+    } else {
+      const ok = await requestToJoinLobby(lobby.id, userId)
+      if (ok) {
+        setJoinRequestStates((current) => new Map(current).set(lobby.id, 'pending'))
+      } else {
+        setJoinError('Could not send your request. Try again.')
+      }
+    }
     setJoiningLobbyId(null)
   }
 
@@ -255,6 +288,7 @@ export default function FindLobbyPage() {
                     key={scored.lobby.id}
                     scored={scored}
                     joining={joiningLobbyId === scored.lobby.id}
+                    joinRequestState={joinRequestStates.get(scored.lobby.id) ?? 'none'}
                     onJoin={() => void handleJoin(scored.lobby)}
                   />
                 ))}
