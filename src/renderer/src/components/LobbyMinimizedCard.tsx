@@ -21,7 +21,7 @@ export default function LobbyMinimizedCard({ lobby, unreadCount, onExpand }: Lob
   const [imageFailed, setImageFailed] = useState(false)
 
   return (
-    <button type="button" onClick={onExpand} className="relative h-24 w-80 overflow-hidden text-left">
+    <button type="button" onClick={onExpand} className="relative h-full w-full overflow-hidden text-left">
       {imageFailed ? (
         <div className="absolute inset-0 bg-neutral-800" aria-hidden="true" />
       ) : (

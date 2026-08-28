@@ -64,17 +64,24 @@ export default function FloatingLobbyPanel({
   if (!lobby || !currentUserId) return null
 
   return (
-    <div
-      className={[
-        'fixed bottom-6 right-6 z-40 flex flex-col overflow-hidden rounded-2xl border border-neutral-800 shadow-2xl transition-[width,height] duration-200',
-        expanded ? 'h-[38rem] w-[26rem] bg-neutral-900' : 'h-24 w-80'
-      ].join(' ')}
-    >
-      {expanded ? (
-        <LobbyRoom lobby={lobby} currentUserId={currentUserId} onMinimize={() => onExpandedChange(false)} />
-      ) : (
-        <LobbyMinimizedCard lobby={lobby} unreadCount={unreadCount} onExpand={() => onExpandedChange(true)} />
-      )}
+    // Sidebar is a fixed w-56 (14rem) — this strip spans the content area to
+    // its right, not the full window. `justify-center` + `px-6` (matching
+    // the old bottom-6/right-6 margin) centers the fixed-size expanded box
+    // within that area via plain flexbox, and does nothing for the
+    // minimized bar since it's `w-full` and fills the strip either way.
+    <div className="pointer-events-none fixed bottom-6 left-56 right-0 z-40 flex justify-center px-6">
+      <div
+        className={[
+          'pointer-events-auto flex flex-col overflow-hidden rounded-2xl border border-neutral-800 shadow-2xl transition-[width,height] duration-200',
+          expanded ? 'h-[38rem] w-[26rem] bg-neutral-900' : 'h-24 w-full'
+        ].join(' ')}
+      >
+        {expanded ? (
+          <LobbyRoom lobby={lobby} currentUserId={currentUserId} onMinimize={() => onExpandedChange(false)} />
+        ) : (
+          <LobbyMinimizedCard lobby={lobby} unreadCount={unreadCount} onExpand={() => onExpandedChange(true)} />
+        )}
+      </div>
     </div>
   )
 }
