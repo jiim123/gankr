@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import { searchLobbies } from '../lib/lobby-search'
 import { rankLobbies } from '../lib/lobby-scoring'
 import type { LobbySummary } from '../lib/lobby-summary'
+import { loadPopularGames, type PopularGame } from '../lib/game-popularity'
 import LobbyFilterPopover, { type LobbyFilterState } from '../components/LobbyFilterPopover'
 import LobbyCard from '../components/LobbyCard'
 import GameSummaryCard from '../components/GameSummaryCard'
@@ -59,13 +60,16 @@ const DEFAULT_FILTERS: LobbyFilterState = {
 }
 
 /**
- * Find lobby opens on games with open lobbies, not on individual lobbies —
- * browse as a 5-per-row grid of game cards (cover art, name, lobby count),
- * pick one to drill into its scored lobby list (LobbyCard). Search is
- * scored, not filtered — the only hard filters are the game, a free slot,
- * and language (lobby-search.ts); region/mic/tone only cost points
- * (lobby-scoring.ts) and are shown as mismatch chips on the lobby card,
- * never used to exclude a result outright.
+ * Find lobby opens on games, not on individual lobbies — browse as a
+ * 5-per-row grid of game cards (cover art, name, lobby count). With "show
+ * only games you own" off, the grid is the 50 most-owned games across all
+ * Gankr users (game-popularity.ts), paginated with Load more; with it on,
+ * the grid is the signed-in user's own owned games instead. Either way,
+ * picking a card drills into that game's scored lobby list (LobbyCard).
+ * Search is scored, not filtered — the only hard filters are the game, a
+ * free slot, and language (lobby-search.ts); region/mic/tone only cost
+ * points (lobby-scoring.ts) and are shown as mismatch chips on the lobby
+ * card, never used to exclude a result outright.
  */
 export default function FindLobbyPage() {
   const { openCreateLobby, activeLobby } = useOutletContext<AppOutletContext>()
@@ -77,6 +81,11 @@ export default function FindLobbyPage() {
   const [loading, setLoading] = useState(true)
   const [joiningLobbyId, setJoiningLobbyId] = useState<string | null>(null)
   const [joinError, setJoinError] = useState<string | null>(null)
+
+  const [popularGames, setPopularGames] = useState<PopularGame[]>([])
+  const [popularOffset, setPopularOffset] = useState(0)
+  const [popularHasMore, setPopularHasMore] = useState(false)
+  const [loadingPopular, setLoadingPopular] = useState(false)
 
   const userId = session?.user.id
 
@@ -120,6 +129,35 @@ export default function FindLobbyPage() {
     }
   }, [runSearch])
 
+  // The 50-most-popular-games browse list only applies when nothing else is
+  // picking the game set (not drilled into one game, not "owned only").
+  // Reloads from the top whenever that becomes true again — a stale
+  // half-loaded list from a previous visit would be confusing.
+  useEffect(() => {
+    if (filters.ownedOnly || filters.appid) return
+    let cancelled = false
+    setLoadingPopular(true)
+    void loadPopularGames(0).then((result) => {
+      if (cancelled) return
+      setPopularGames(result.games)
+      setPopularOffset(result.games.length)
+      setPopularHasMore(result.hasMore)
+      setLoadingPopular(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [filters.ownedOnly, filters.appid])
+
+  async function handleLoadMorePopular(): Promise<void> {
+    setLoadingPopular(true)
+    const result = await loadPopularGames(popularOffset)
+    setPopularGames((current) => [...current, ...result.games])
+    setPopularOffset((current) => current + result.games.length)
+    setPopularHasMore(result.hasMore)
+    setLoadingPopular(false)
+  }
+
   const ownedAppids = useMemo(() => new Set((context?.ownedGames ?? []).map((game) => game.appid)), [context])
 
   const ranked = useMemo(
@@ -127,31 +165,28 @@ export default function FindLobbyPage() {
     [candidates, filters.region, filters.mic, filters.tone, ownedAppids]
   )
 
-  // Browse view: one card per game, not per lobby. "Show only games you
-  // own" filters this grouping, live, off the already-fetched/ranked
-  // results — no extra round trip needed for a toggle this cheap.
-  const gameSummaries = useMemo<GameSummary[]>(() => {
-    const relevant = filters.ownedOnly ? ranked.filter((scored) => ownedAppids.has(scored.lobby.appid)) : ranked
-
-    const byAppid = new Map<string, GameSummary>()
-    for (const scored of relevant) {
-      const existing = byAppid.get(scored.lobby.appid)
-      if (existing) {
-        existing.lobbyCount += 1
-      } else {
-        byAppid.set(scored.lobby.appid, { appid: scored.lobby.appid, gameName: scored.lobby.gameName, lobbyCount: 1 })
-      }
+  // How many currently-scored lobbies each game has — looked up by both the
+  // popular-games grid and the owned-games grid, not recomputed per card.
+  const lobbyCountByAppid = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const scored of ranked) {
+      counts.set(scored.lobby.appid, (counts.get(scored.lobby.appid) ?? 0) + 1)
     }
+    return counts
+  }, [ranked])
 
-    // Games the user owns come first, matching the existing "live lobbies
-    // for games the user owns come first" ordering rule.
-    return [...byAppid.values()].sort((a, b) => {
-      const aOwned = ownedAppids.has(a.appid) ? 0 : 1
-      const bOwned = ownedAppids.has(b.appid) ? 0 : 1
-      if (aOwned !== bOwned) return aOwned - bOwned
-      return b.lobbyCount - a.lobbyCount
-    })
-  }, [ranked, filters.ownedOnly, ownedAppids])
+  // "Show only games you own": every owned game, not just ones with a
+  // lobby right now — a 0-lobby card is still useful, it invites creating
+  // one (CreateThisLobbyCard's same fallback covers that once picked).
+  const ownedGameSummaries = useMemo<GameSummary[]>(() => {
+    return (context?.ownedGames ?? [])
+      .map((game) => ({
+        appid: game.appid,
+        gameName: game.name,
+        lobbyCount: lobbyCountByAppid.get(game.appid) ?? 0
+      }))
+      .sort((a, b) => b.lobbyCount - a.lobbyCount)
+  }, [context, lobbyCountByAppid])
 
   async function handleJoin(lobby: LobbySummary): Promise<void> {
     if (!userId) return
@@ -226,7 +261,37 @@ export default function FindLobbyPage() {
               </div>
             )}
           </>
-        ) : gameSummaries.length === 0 ? (
+        ) : filters.ownedOnly ? (
+          ownedGameSummaries.length === 0 ? (
+            <CreateThisLobbyCard
+              gameName={null}
+              region={filters.region}
+              mic={filters.mic}
+              tone={filters.tone}
+              onCreate={() =>
+                openCreateLobby({
+                  region: filters.region ?? undefined,
+                  mic: filters.mic ?? undefined,
+                  tone: filters.tone ?? undefined
+                })
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-5 gap-4">
+              {ownedGameSummaries.map((game) => (
+                <GameSummaryCard
+                  key={game.appid}
+                  appid={game.appid}
+                  gameName={game.gameName}
+                  lobbyCount={game.lobbyCount}
+                  onClick={() => setFilters((current) => ({ ...current, appid: game.appid }))}
+                />
+              ))}
+            </div>
+          )
+        ) : loadingPopular && popularGames.length === 0 ? (
+          <p className="text-sm text-neutral-400">Loading…</p>
+        ) : popularGames.length === 0 ? (
           <CreateThisLobbyCard
             gameName={null}
             region={filters.region}
@@ -241,17 +306,31 @@ export default function FindLobbyPage() {
             }
           />
         ) : (
-          <div className="grid grid-cols-5 gap-4">
-            {gameSummaries.map((game) => (
-              <GameSummaryCard
-                key={game.appid}
-                appid={game.appid}
-                gameName={game.gameName}
-                lobbyCount={game.lobbyCount}
-                onClick={() => setFilters((current) => ({ ...current, appid: game.appid }))}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-5 gap-4">
+              {popularGames.map((game) => (
+                <GameSummaryCard
+                  key={game.appid}
+                  appid={game.appid}
+                  gameName={game.name}
+                  lobbyCount={lobbyCountByAppid.get(game.appid) ?? 0}
+                  onClick={() => setFilters((current) => ({ ...current, appid: game.appid }))}
+                />
+              ))}
+            </div>
+            {popularHasMore && (
+              <div className="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => void handleLoadMorePopular()}
+                  disabled={loadingPopular}
+                >
+                  {loadingPopular ? 'Loading…' : 'Load more'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

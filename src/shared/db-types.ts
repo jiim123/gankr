@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -528,7 +528,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      game_popularity: {
+        Row: {
+          appid: string | null
+          owner_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_games_appid_fkey"
+            columns: ["appid"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["appid"]
+          },
+        ]
+      }
     }
     Functions: {
       sweep_lobbies: { Args: never; Returns: undefined }
