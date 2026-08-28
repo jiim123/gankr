@@ -78,5 +78,18 @@
       "processNames": ["factorio"],
       "source": "Unverified — Factorio has strong native Linux support; name assumed from public knowledge, not confirmed live."
     }
+  },
+  "589290": {
+    "name": "Holdfast: Nations At War",
+    "windows": {
+      "verified": true,
+      "processNames": ["Holdfast NaW.exe"],
+      "source": "Confirmed 2026-08-28 from the actual installed binary at steamapps/common/Holdfast Nations At War/Holdfast NaW.exe — not a live tasklist scan like the CS2 entry, but a real filename off disk, not a guess. UnityCrashHandler64.exe in the same folder is an unrelated crash reporter, not the game itself."
+    },
+    "linux": {
+      "verified": false,
+      "processNames": ["Holdfast NaW.x86_64"],
+      "source": "Unverified — Unity default Linux build naming, assumed from the Windows binary name. No Linux test hardware."
+    }
   }
 }
