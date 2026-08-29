@@ -124,7 +124,12 @@ export function useLaunchDetection(lobby: LobbySummary | null, userId: string | 
             // must never overwrite real earlier playtime. This biases the
             // accepted minutes-in-game imprecision toward over-counting,
             // never under-crediting a real session.
-            ...(gameStartedAt ? {} : { game_started_at: new Date().toISOString() })
+            ...(gameStartedAt ? {} : { game_started_at: new Date().toISOString() }),
+            // Clear any stale exit stamp from a previous stint — Phase 10's
+            // overlap math (private.sync_session_participant) prefers
+            // game_ended_at over left_at/now() when present, so a leftover
+            // value here would undercredit this new stint's real overlap.
+            game_ended_at: null
           })
         }
         return
@@ -144,8 +149,11 @@ export function useLaunchDetection(lobby: LobbySummary | null, userId: string | 
         // Not a new enum value — 'in_lobby' correctly lets the
         // sync_lobby_playing_status trigger fall the lobby back out of
         // 'playing' if it needs to, and matches the existing 5-value
-        // member_state enum exactly.
-        await updateOwnMember({ member_state: 'in_lobby' })
+        // member_state enum exactly. game_ended_at is Phase 10's real
+        // interval endpoint for the feedback overlap check — stamped here,
+        // not derived later, since "now" at detection time is the only
+        // moment that actually knows when the process really disappeared.
+        await updateOwnMember({ member_state: 'in_lobby', game_ended_at: new Date().toISOString() })
       }
     }
 
@@ -181,7 +189,8 @@ export function useLaunchDetection(lobby: LobbySummary | null, userId: string | 
 
     await updateOwnMember({
       member_state: 'in_game',
-      ...(gameStartedAt ? {} : { game_started_at: new Date().toISOString() })
+      ...(gameStartedAt ? {} : { game_started_at: new Date().toISOString() }),
+      game_ended_at: null
     })
   }, [lobbyId, appid, gameStartedAt, updateOwnMember])
 

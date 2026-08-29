@@ -7,9 +7,13 @@ import NotificationToasts from '../components/NotificationToasts'
 import CreateLobbyModal, { type CreateLobbyPrefill } from '../components/CreateLobbyModal'
 import { useActiveLobby } from '../lib/active-lobby'
 import { useLaunchDetection } from '../lib/launch-detection'
+import { useFeedbackPrompt } from '../lib/feedback-prompt'
 import { useSession } from '../lib/session'
 import { useNotifications, resolveNotificationTarget, type NotificationItem } from '../lib/notifications'
 import type { LobbySummary } from '../lib/lobby-summary'
+import FeedbackPromptModal from '../components/FeedbackPromptModal'
+
+const FEEDBACK_PROMPT_DURATION_MS = 10 * 60 * 1000
 
 /** Handed to every routed page via <Outlet context> so Find lobby (and any
  * future page) can open the create-lobby modal or read the active lobby for
@@ -35,6 +39,17 @@ export default function AppShell() {
   // floating panel is minimized, but an in-progress launch/heartbeat has to
   // keep polling regardless. Same reasoning as useActiveLobby living here.
   const launch = useLaunchDetection(activeLobby, userId)
+  // Same layout-level reasoning as useLaunchDetection: must survive
+  // LobbyRoom unmounting when the floating panel is minimized. CLAUDE.md's
+  // Phase 10: the prompt stays open for up to 10 minutes, owned here rather
+  // than inside the hook since it's a UI-lifetime concern, not a detection
+  // concern.
+  const feedbackPrompt = useFeedbackPrompt(activeLobby, userId)
+  useEffect(() => {
+    if (!feedbackPrompt.promptLobbyId) return undefined
+    const timeout = setTimeout(feedbackPrompt.dismiss, FEEDBACK_PROMPT_DURATION_MS)
+    return () => clearTimeout(timeout)
+  }, [feedbackPrompt.promptLobbyId, feedbackPrompt.dismiss])
   const navigate = useNavigate()
   const [createLobbyOpen, setCreateLobbyOpen] = useState(false)
   const [createLobbyPrefill, setCreateLobbyPrefill] = useState<CreateLobbyPrefill | null>(null)
@@ -144,6 +159,13 @@ export default function AppShell() {
         gameNames={gameNames}
         onDismiss={dismissToast}
         onItemClick={handleNotificationClick}
+      />
+
+      <FeedbackPromptModal
+        open={feedbackPrompt.promptLobbyId !== null}
+        lobbyId={feedbackPrompt.promptLobbyId}
+        currentUserId={userId}
+        onClose={feedbackPrompt.dismiss}
       />
     </div>
   )

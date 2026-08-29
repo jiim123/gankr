@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -146,6 +146,58 @@ export type Database = {
           },
           {
             foreignKeyName: "compliments_to_user_id_fkey"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          id: string
+          polarity: Database["public"]["Enums"]["feedback_polarity"]
+          session_id: string
+          tag: Database["public"]["Enums"]["feedback_tag"]
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          id?: string
+          polarity: Database["public"]["Enums"]["feedback_polarity"]
+          session_id: string
+          tag: Database["public"]["Enums"]["feedback_tag"]
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          polarity?: Database["public"]["Enums"]["feedback_polarity"]
+          session_id?: string
+          tag?: Database["public"]["Enums"]["feedback_tag"]
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_to_user_id_fkey"
             columns: ["to_user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -320,6 +372,7 @@ export type Database = {
       }
       lobby_members: {
         Row: {
+          game_ended_at: string | null
           game_started_at: string | null
           joined_at: string
           last_heartbeat: string
@@ -330,6 +383,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          game_ended_at?: string | null
           game_started_at?: string | null
           joined_at?: string
           last_heartbeat?: string
@@ -340,6 +394,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          game_ended_at?: string | null
           game_started_at?: string | null
           joined_at?: string
           last_heartbeat?: string
@@ -551,7 +606,7 @@ export type Database = {
           {
             foreignKeyName: "session_history_lobby_id_fkey"
             columns: ["lobby_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "lobbies"
             referencedColumns: ["id"]
           },
@@ -559,18 +614,24 @@ export type Database = {
       }
       session_participants: {
         Row: {
+          ended_at: string | null
           minutes_in_game: number
           session_id: string
+          started_at: string | null
           user_id: string
         }
         Insert: {
+          ended_at?: string | null
           minutes_in_game?: number
           session_id: string
+          started_at?: string | null
           user_id: string
         }
         Update: {
+          ended_at?: string | null
           minutes_in_game?: number
           session_id?: string
+          started_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -669,8 +730,10 @@ export type Database = {
           id: string
           languages: string[]
           last_seen_at: string
+          needs_moderation_review: boolean
           notification_preferences: Json
           region: string | null
+          reputation_score: number
         }
         Insert: {
           avatar_url?: string | null
@@ -679,8 +742,10 @@ export type Database = {
           id: string
           languages?: string[]
           last_seen_at?: string
+          needs_moderation_review?: boolean
           notification_preferences?: Json
           region?: string | null
+          reputation_score?: number
         }
         Update: {
           avatar_url?: string | null
@@ -689,8 +754,10 @@ export type Database = {
           id?: string
           languages?: string[]
           last_seen_at?: string
+          needs_moderation_review?: boolean
           notification_preferences?: Json
           region?: string | null
+          reputation_score?: number
         }
         Relationships: []
       }
@@ -717,9 +784,22 @@ export type Database = {
         Args: { p_lobby_id: string }
         Returns: undefined
       }
+      recompute_reputation_scores: { Args: never; Returns: undefined }
       sweep_lobbies: { Args: never; Returns: undefined }
     }
     Enums: {
+      feedback_polarity: "positive" | "negative"
+      feedback_tag:
+        | "friendly"
+        | "team_player"
+        | "fun_to_play_with"
+        | "leader"
+        | "respectful"
+        | "toxic"
+        | "rage_quitter"
+        | "poor_teamwork"
+        | "afk"
+        | "untrustworthy"
       friendship_status: "pending" | "accepted" | "blocked"
       game_source: "steam" | "manual"
       join_request_status: "pending" | "accepted" | "denied"
@@ -874,6 +954,19 @@ export const Constants = {
   },
   public: {
     Enums: {
+      feedback_polarity: ["positive", "negative"],
+      feedback_tag: [
+        "friendly",
+        "team_player",
+        "fun_to_play_with",
+        "leader",
+        "respectful",
+        "toxic",
+        "rage_quitter",
+        "poor_teamwork",
+        "afk",
+        "untrustworthy",
+      ],
       friendship_status: ["pending", "accepted", "blocked"],
       game_source: ["steam", "manual"],
       join_request_status: ["pending", "accepted", "denied"],

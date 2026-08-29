@@ -386,6 +386,10 @@ verify_jwt = true
 [functions.submit-report]
 verify_jwt = true
 
+# Same as submit-report.
+[functions.submit-feedback]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

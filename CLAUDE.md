@@ -25,8 +25,9 @@ Desktop client for finding people to play games with. Electron, React, TypeScrip
   or an Edge Function.
 - Clicking "Start game" is intent. A running process is truth. Never mark someone in-game
   because they clicked a button.
-- Positive feedback tags are public. Negative feedback tags are NEVER public, never counted
-  on a profile, and never returned by any endpoint a normal client can call.
+- Feedback tags (positive and negative) are public on a profile, including who gave
+  them — a deliberate reversal of this project's original design (see Phase 10).
+  Reputation renders as the real numeric score (-500 to 500), not a coarse tier.
 
 ### Style
 
@@ -97,8 +98,9 @@ Desktop client for finding people to play games with. Electron, React, TypeScrip
   or an Edge Function.
 - Clicking "Start game" is intent. A running process is truth. Never mark someone in-game
   because they clicked a button.
-- Positive feedback tags are public. Negative feedback tags are NEVER public, never counted
-  on a profile, and never returned by any endpoint a normal client can call.
+- Feedback tags (positive and negative) are public on a profile, including who gave
+  them — a deliberate reversal of this project's original design (see Phase 10).
+  Reputation renders as the real numeric score (-500 to 500), not a coarse tier.
 
 ## Style
 
@@ -500,8 +502,15 @@ and stays read.
 
 ## Phase 10 — Reputation and session feedback
 
-Two-sided feedback. Positive tags are public, negative tags are never public. That
-asymmetry is the thing that keeps this a behaviour system instead of a harassment tool.
+Two-sided feedback. **Amended from the original design**: both positive and negative
+tags are public on a profile, including who gave them, and the reputation score renders
+as the real -500..500 number rather than a coarse tier. This is a deliberate, later
+product decision — the original design kept negative feedback private specifically to
+avoid a "scarlet letter" harassment vector, and that risk is real and still applies; it
+was accepted knowingly, not overlooked. The abuse-control mechanics below (budgets,
+revenge detection, damping, decay, telemetry cross-check, graduated effects) are
+unchanged from the original design — only visibility and the number-vs-tier choice
+were reversed.
 
 > **Prompt for Claude Code**
 >
@@ -519,14 +528,13 @@ asymmetry is the thing that keeps this a behaviour system instead of a harassmen
 > id, from_user_id, to_user_id, session_id, tag, polarity, created_at,
 > unique on (from_user_id, to_user_id, session_id).
 >
-> **Visibility is asymmetric and this is not negotiable.**
-> - Positive tags are public on the profile with counts.
-> - Negative tags are never rendered on any profile, never counted publicly, and never
->   returned by any API a normal client can call. They feed a private standing score and a
->   moderation queue only.
-> - The user sees their own standing as a coarse tier such as Good standing, Mixed,
->   Restricted. Never a number, never a rank, never the individual tags they received.
->   A visible negative count is a scarlet letter and a griefing target.
+> **Visibility (amended — see the note above the prompt).**
+> - Both positive and negative tags are public on a profile, with counts, including who
+>   gave them. The 5 most recent received are shown as "X gave Y to Z", coloured by
+>   polarity.
+> - The user's own standing (and everyone else's) is shown as the real numeric score,
+>   -500 to 500, coloured green toward positive and red toward negative. Not a coarse
+>   tier.
 >
 > **Abuse controls, all enforced server-side in an Edge Function.**
 > - Both users must have a `session_participants` row for that session, with at least 10
@@ -556,7 +564,8 @@ asymmetry is the thing that keeps this a behaviour system instead of a harassmen
 > **Effects are graduated and never automatic bans.**
 > 1. Invisible. Score moves, nothing else happens.
 > 2. Soft matchmaking preference, so similarly rated players see each other's lobbies first.
-> 3. In-app warning that describes the behaviour pattern, not who reported it.
+> 3. In-app warning that describes the behaviour pattern. (Originally scoped to not name
+>    reporters — moot now that individual feedback is public on the profile anyway.)
 > 4. Restricted, meaning public lobbies are unavailable and they can only play with
 >    existing friends.
 > 5. Human review from the moderation queue.
@@ -565,8 +574,9 @@ asymmetry is the thing that keeps this a behaviour system instead of a harassmen
 > positives. Someone who had a bad month must be able to climb out through normal play, or
 > the system just produces a permanent underclass who uninstall.
 >
-> **Profile page** shows the reputation tier, positive tag counts, sessions played, and
-> hours played through Gankr. It shows no negative information of any kind.
+> **Profile page** shows the numeric reputation score, counts for every tag (positive and
+> negative), and the 5 most recent feedback events received, named and coloured by
+> polarity.
 >
 > Reputation tiers are computed by a scheduled function over weighted, decayed feedback.
 > Never a leaderboard position, because leaderboards get farmed and bury every new user.
