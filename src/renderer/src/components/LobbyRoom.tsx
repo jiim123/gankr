@@ -10,7 +10,6 @@ import { supabase } from '../lib/supabase'
 import { steamHeaderImageUrl } from '../lib/steam-images'
 import type { LaunchDetectionState } from '../lib/launch-detection'
 import LobbyMemberList from './LobbyMemberList'
-import LobbyVisibilityPanel from './LobbyVisibilityPanel'
 import LobbyRequirementsDialog from './LobbyRequirementsDialog'
 import LobbyChatPanel from './LobbyChatPanel'
 import ReportMemberModal from './ReportMemberModal'
@@ -52,8 +51,10 @@ async function leaveLobby(lobbyId: string, userId: string): Promise<void> {
 /**
  * The floating panel's expanded content: one header row (thumbnail, lobby
  * name/game/status, minimize, Leave lobby), then two columns below it —
- * members + visibility/requirements on the left, chat filling the full
- * column height on the right. Fills the fixed-size panel
+ * members + a Requirements trigger on the left, chat filling the full
+ * column height on the right. Visibility is creation-only (set in
+ * CreateLobbyModal, shown read-only in LobbyRequirementsPanel) — there's
+ * no post-creation toggle here anymore. Fills the fixed-size panel
  * FloatingLobbyPanel.tsx gives it entirely (`h-full`), rather than sizing
  * itself, since that panel now owns the expanded/minimized dimensions.
  *
@@ -124,7 +125,9 @@ export default function LobbyRoom({ lobby, currentUserId, onMinimize, launch }: 
       <div className="grid min-h-0 flex-1 grid-cols-2 gap-4 p-4">
         <div className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-1">
           <LobbyMemberList lobby={lobby} currentUserId={currentUserId} onReport={setReportTarget} launch={launch} />
-          <LobbyVisibilityPanel lobby={lobby} isOwner={isOwner} onOpenRequirements={() => setRequirementsOpen(true)} />
+          <button type="button" className="btn-secondary w-full" onClick={() => setRequirementsOpen(true)}>
+            {isOwner ? 'Edit requirements' : 'Requirements'}
+          </button>
         </div>
 
         <div className="min-h-0">

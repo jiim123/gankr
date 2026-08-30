@@ -328,48 +328,6 @@ export type Database = {
           },
         ]
       }
-      lobby_join_requests: {
-        Row: {
-          created_at: string
-          decided_at: string | null
-          id: string
-          lobby_id: string
-          status: Database["public"]["Enums"]["join_request_status"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          decided_at?: string | null
-          id?: string
-          lobby_id: string
-          status?: Database["public"]["Enums"]["join_request_status"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          decided_at?: string | null
-          id?: string
-          lobby_id?: string
-          status?: Database["public"]["Enums"]["join_request_status"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lobby_join_requests_lobby_id_fkey"
-            columns: ["lobby_id"]
-            isOneToOne: false
-            referencedRelation: "lobbies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lobby_join_requests_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       lobby_members: {
         Row: {
           game_ended_at: string | null
@@ -462,6 +420,32 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lobby_passwords: {
+        Row: {
+          created_at: string
+          lobby_id: string
+          password: string
+        }
+        Insert: {
+          created_at?: string
+          lobby_id: string
+          password: string
+        }
+        Update: {
+          created_at?: string
+          lobby_id?: string
+          password?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lobby_passwords_lobby_id_fkey"
+            columns: ["lobby_id"]
+            isOneToOne: true
+            referencedRelation: "lobbies"
             referencedColumns: ["id"]
           },
         ]
@@ -780,6 +764,10 @@ export type Database = {
       }
     }
     Functions: {
+      join_private_lobby: {
+        Args: { p_lobby_id: string; p_password: string }
+        Returns: undefined
+      }
       log_manual_launch_override: {
         Args: { p_lobby_id: string }
         Returns: undefined
@@ -802,7 +790,6 @@ export type Database = {
         | "untrustworthy"
       friendship_status: "pending" | "accepted" | "blocked"
       game_source: "steam" | "manual"
-      join_request_status: "pending" | "accepted" | "denied"
       lobby_status: "open" | "playing" | "closed"
       lobby_tone: "casual" | "competitive"
       lobby_visibility: "open" | "private"
@@ -969,7 +956,6 @@ export const Constants = {
       ],
       friendship_status: ["pending", "accepted", "blocked"],
       game_source: ["steam", "manual"],
-      join_request_status: ["pending", "accepted", "denied"],
       lobby_status: ["open", "playing", "closed"],
       lobby_tone: ["casual", "competitive"],
       lobby_visibility: ["open", "private"],

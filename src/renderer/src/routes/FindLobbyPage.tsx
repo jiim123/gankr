@@ -6,13 +6,13 @@ import { useSession } from '../lib/session'
 import { supabase } from '../lib/supabase'
 import { searchLobbies } from '../lib/lobby-search'
 import { rankLobbies } from '../lib/lobby-scoring'
-import type { LobbySummary } from '../lib/lobby-summary'
+import { resolveLobbyDisplayName, type LobbySummary } from '../lib/lobby-summary'
 import { loadPopularGames, type PopularGame } from '../lib/game-popularity'
-import { loadOwnJoinRequestStates, requestToJoinLobby } from '../lib/lobby-join-requests'
 import LobbyFilterPopover, { type LobbyFilterState } from '../components/LobbyFilterPopover'
 import LobbyCard from '../components/LobbyCard'
 import GameSummaryCard from '../components/GameSummaryCard'
 import CreateThisLobbyCard from '../components/CreateThisLobbyCard'
+import JoinPrivateLobbyModal from '../components/JoinPrivateLobbyModal'
 
 interface OwnedGame {
   appid: string
@@ -82,13 +82,12 @@ export default function FindLobbyPage() {
   const [loading, setLoading] = useState(true)
   const [joiningLobbyId, setJoiningLobbyId] = useState<string | null>(null)
   const [joinError, setJoinError] = useState<string | null>(null)
+  const [passwordPromptLobby, setPasswordPromptLobby] = useState<LobbySummary | null>(null)
 
   const [popularGames, setPopularGames] = useState<PopularGame[]>([])
   const [popularOffset, setPopularOffset] = useState(0)
   const [popularHasMore, setPopularHasMore] = useState(false)
   const [loadingPopular, setLoadingPopular] = useState(false)
-
-  const [joinRequestStates, setJoinRequestStates] = useState<Map<string, 'none' | 'pending' | 'denied'>>(new Map())
 
   const userId = session?.user.id
 
@@ -168,27 +167,6 @@ export default function FindLobbyPage() {
     [candidates, filters.region, filters.mic, filters.tone, ownedAppids]
   )
 
-  // Own join-request state (pending/denied) per private lobby currently in
-  // view, so LobbyCard can show "Requested"/"Request denied" instead of a
-  // dead-end "Request to join" — refetched whenever the candidate set
-  // changes (a new search, or Realtime bringing in a different lobby).
-  useEffect(() => {
-    if (!userId || candidates.length === 0) {
-      setJoinRequestStates(new Map())
-      return
-    }
-    let cancelled = false
-    void loadOwnJoinRequestStates(
-      userId,
-      candidates.map((lobby) => lobby.id)
-    ).then((result) => {
-      if (!cancelled) setJoinRequestStates(result)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [userId, candidates])
-
   // How many currently-scored lobbies each game has — looked up by both the
   // popular-games grid and the owned-games grid, not recomputed per card.
   const lobbyCountByAppid = useMemo(() => {
@@ -218,20 +196,15 @@ export default function FindLobbyPage() {
       setJoinError('Leave your current lobby first')
       return
     }
-    setJoiningLobbyId(lobby.id)
     setJoinError(null)
     if (lobby.visibility === 'open') {
+      setJoiningLobbyId(lobby.id)
       const { error } = await supabase.from('lobby_members').insert({ lobby_id: lobby.id, user_id: userId })
       if (error) setJoinError(error.message)
+      setJoiningLobbyId(null)
     } else {
-      const ok = await requestToJoinLobby(lobby.id, userId)
-      if (ok) {
-        setJoinRequestStates((current) => new Map(current).set(lobby.id, 'pending'))
-      } else {
-        setJoinError('Could not send your request. Try again.')
-      }
+      setPasswordPromptLobby(lobby)
     }
-    setJoiningLobbyId(null)
   }
 
   const selectedGameName = filters.appid
@@ -288,7 +261,6 @@ export default function FindLobbyPage() {
                     key={scored.lobby.id}
                     scored={scored}
                     joining={joiningLobbyId === scored.lobby.id}
-                    joinRequestState={joinRequestStates.get(scored.lobby.id) ?? 'none'}
                     onJoin={() => void handleJoin(scored.lobby)}
                   />
                 ))}
@@ -367,6 +339,14 @@ export default function FindLobbyPage() {
           </>
         )}
       </div>
+
+      <JoinPrivateLobbyModal
+        open={passwordPromptLobby !== null}
+        lobbyId={passwordPromptLobby?.id ?? null}
+        lobbyName={passwordPromptLobby ? resolveLobbyDisplayName(passwordPromptLobby) : ''}
+        onJoined={() => setPasswordPromptLobby(null)}
+        onClose={() => setPasswordPromptLobby(null)}
+      />
     </div>
   )
 }

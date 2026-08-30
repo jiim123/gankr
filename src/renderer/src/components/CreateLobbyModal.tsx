@@ -7,6 +7,7 @@ import type { LobbySummary } from '../lib/lobby-summary'
 
 type MicRequirement = Tables<'lobbies'>['mic']
 type LobbyTone = Tables<'lobbies'>['tone']
+type LobbyVisibility = Tables<'lobbies'>['visibility']
 
 export interface CreateLobbyPrefill {
   appid?: string
@@ -66,9 +67,13 @@ interface CreateLobbyModalProps {
  * A modal, not a route — CLAUDE.md says lobby creation is "available from
  * anywhere," and Phase 7's lobby room doesn't exist to navigate to
  * afterward. Mounted at the AppShell level so it floats above the docked
- * bar too. Fields match the spec exactly: game (owned, required), max
- * members, region/mic/tone. No languages field — inherited silently from
- * the creator's users.languages at insert time.
+ * bar too. Fields: game (owned, required), name, max members,
+ * region/mic/tone, visibility, and (private only) a password — visibility
+ * and the password are creation-only, by design: there's no post-creation
+ * edit UI for either (see LobbyRequirementsPanel's read-only Visibility
+ * row and LobbyRequirementsDialog's owner-only password display). No
+ * languages field — inherited silently from the creator's users.languages
+ * at insert time.
  */
 export default function CreateLobbyModal({ open, prefill, activeLobby, onClose }: CreateLobbyModalProps) {
   const { session } = useSession()
@@ -76,10 +81,13 @@ export default function CreateLobbyModal({ open, prefill, activeLobby, onClose }
   const [context, setContext] = useState<CreateLobbyContext | null>(null)
   const [loading, setLoading] = useState(false)
   const [appid, setAppid] = useState('')
+  const [name, setName] = useState('')
   const [maxMembers, setMaxMembers] = useState(DEFAULT_MEMBERS)
   const [region, setRegion] = useState<string>(REGIONS[0])
   const [mic, setMic] = useState<MicRequirement>('preferred')
   const [tone, setTone] = useState<LobbyTone>('casual')
+  const [visibility, setVisibility] = useState<LobbyVisibility>('open')
+  const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -90,10 +98,13 @@ export default function CreateLobbyModal({ open, prefill, activeLobby, onClose }
     void loadCreateLobbyContext(session.user.id).then((result) => {
       setContext(result)
       setAppid(prefill?.appid ?? result.games[0]?.appid ?? '')
+      setName('')
       setRegion(prefill?.region ?? result.region ?? REGIONS[0])
       setMic(prefill?.mic ?? 'preferred')
       setTone(prefill?.tone ?? 'casual')
       setMaxMembers(DEFAULT_MEMBERS)
+      setVisibility('open')
+      setPassword('')
       setLoading(false)
     })
     // Reload every time the modal opens, since a prefill or owned-games
@@ -113,6 +124,10 @@ export default function CreateLobbyModal({ open, prefill, activeLobby, onClose }
       setError('Pick a game')
       return
     }
+    if (visibility === 'private' && !password.trim()) {
+      setError('Set a password for a private lobby')
+      return
+    }
 
     setSubmitting(true)
     setError(null)
@@ -121,11 +136,13 @@ export default function CreateLobbyModal({ open, prefill, activeLobby, onClose }
         .from('lobbies')
         .insert({
           appid,
+          name: name.trim() || null,
           owner_id: session.user.id,
           max_members: maxMembers,
           region,
           mic,
           tone,
+          visibility,
           languages: context?.languages ?? []
         })
         .select()
@@ -140,6 +157,10 @@ export default function CreateLobbyModal({ open, prefill, activeLobby, onClose }
       // owner-only lobby whose join failed gets cleaned up by the same
       // sweep_lobbies() cron that handles every other abandoned lobby.
       await supabase.from('lobby_members').insert({ lobby_id: lobby.id, user_id: session.user.id })
+
+      if (visibility === 'private') {
+        await supabase.from('lobby_passwords').insert({ lobby_id: lobby.id, password: password.trim() })
+      }
 
       onClose()
     } finally {
@@ -173,6 +194,17 @@ export default function CreateLobbyModal({ open, prefill, activeLobby, onClose }
                   </option>
                 ))}
               </select>
+            </label>
+
+            <label className="block text-xs text-neutral-400">
+              Lobby name (optional)
+              <input
+                type="text"
+                className="field mt-1 w-full"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Defaults to your name's lobby"
+              />
             </label>
 
             <label className="block text-xs text-neutral-400">
@@ -228,6 +260,43 @@ export default function CreateLobbyModal({ open, prefill, activeLobby, onClose }
                 ))}
               </select>
             </label>
+
+            <div>
+              <span className="block text-xs text-neutral-400">Visibility</span>
+              <div className="mt-1 flex gap-2">
+                {(['open', 'private'] as const).map((option) => {
+                  const active = visibility === option
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setVisibility(option)}
+                      className={[
+                        'flex-1 rounded-full border px-3 py-1 text-xs transition-colors',
+                        active
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-neutral-800 bg-neutral-900 text-neutral-300 hover:bg-neutral-800'
+                      ].join(' ')}
+                    >
+                      {option === 'open' ? 'Open' : 'Private'}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {visibility === 'private' && (
+              <label className="block text-xs text-neutral-400">
+                Password
+                <input
+                  type="password"
+                  className="field mt-1 w-full"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Shared with whoever you invite"
+                />
+              </label>
+            )}
           </div>
         )}
 

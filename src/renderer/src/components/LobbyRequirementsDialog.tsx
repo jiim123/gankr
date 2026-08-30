@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { resolveLobbyDisplayName, type LobbySummary } from '../lib/lobby-summary'
 import { supabase } from '../lib/supabase'
+import { loadOwnLobbyPassword } from '../lib/lobby-password'
 import LobbyRequirementsPanel from './LobbyRequirementsPanel'
 
 interface LobbyRequirementsDialogProps {
@@ -16,19 +17,37 @@ interface LobbyRequirementsDialogProps {
  * Escape, or focus trap, consistent with both existing modals and
  * deliberately not a place to add new affordances. Wraps
  * LobbyRequirementsPanel's existing owner-edit/read-only content verbatim,
- * plus the one new field this redesign adds: the lobby's owner-settable
- * `name`, saved on blur the same "no staged form" way every other
- * Requirements field saves (see LobbyRequirementsPanel.tsx).
+ * plus the lobby's owner-settable `name` (saved on blur, same "no staged
+ * form" way every other Requirements field saves) and, for a private
+ * lobby's owner only, a read-only view of the password set at creation
+ * (with a Copy button) — the password itself is never editable here, only
+ * viewable, matching visibility's own creation-only rule.
  */
 export default function LobbyRequirementsDialog({ open, lobby, isOwner, onClose }: LobbyRequirementsDialogProps) {
   const [nameDraft, setNameDraft] = useState(lobby.name ?? '')
   const [savingName, setSavingName] = useState(false)
+  const [password, setPassword] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (open) setNameDraft(lobby.name ?? '')
   }, [open, lobby.name])
 
+  const showPassword = open && isOwner && lobby.visibility === 'private'
+  useEffect(() => {
+    if (!showPassword) return
+    setCopied(false)
+    void loadOwnLobbyPassword(lobby.id).then(setPassword)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-fetch when the dialog is (re)opened for this owner/private combination, not on every lobby summary refresh.
+  }, [showPassword, lobby.id])
+
   if (!open) return null
+
+  async function handleCopyPassword(): Promise<void> {
+    if (!password) return
+    await navigator.clipboard.writeText(password)
+    setCopied(true)
+  }
 
   async function saveName(): Promise<void> {
     const trimmed = nameDraft.trim()
@@ -70,6 +89,18 @@ export default function LobbyRequirementsDialog({ open, lobby, isOwner, onClose 
             </div>
           )}
         </div>
+
+        {showPassword && (
+          <div className="mt-4">
+            <span className="block text-xs text-neutral-400">Password</span>
+            <div className="mt-1 flex items-center gap-2">
+              <input type="text" className="field w-full" value={password ?? 'Loading…'} readOnly />
+              <button type="button" className="btn-secondary shrink-0" onClick={() => void handleCopyPassword()}>
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mt-4">
           <LobbyRequirementsPanel lobby={lobby} isOwner={isOwner} />

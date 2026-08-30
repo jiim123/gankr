@@ -55,4 +55,4 @@ export const TONE_OPTIONS = ['casual', 'competitive'] as const
 /** Hoisted out of CreateLobbyModal.tsx so LobbyRequirementsPanel.tsx (Phase 7)
  * can reuse the exact same bounds instead of redeclaring them. */
 export const MIN_MEMBERS = 2
-export const MAX_MEMBERS = 8
+export const MAX_MEMBERS = 50

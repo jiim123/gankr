@@ -29,6 +29,9 @@ interface LobbyRequirementsPanelProps {
  * since this room is live and other members see changes immediately via the
  * existing subscription; a lingering unsaved-edit state would be confusing
  * in a multi-viewer context. Lock/Unlock does the same, one field at a time.
+ * Visibility is shown but not editable here, for owner or non-owner alike —
+ * it's creation-only (set in CreateLobbyModal), matching the same rule the
+ * private-lobby password follows.
  */
 export default function LobbyRequirementsPanel({ lobby, isOwner }: LobbyRequirementsPanelProps) {
   const [savingField, setSavingField] = useState<string | null>(null)
@@ -46,6 +49,10 @@ export default function LobbyRequirementsPanel({ lobby, isOwner }: LobbyRequirem
     return (
       <div>
         <dl className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-neutral-400">Visibility</dt>
+            <dd className="text-neutral-200">{lobby.visibility === 'private' ? 'Private' : 'Open'}</dd>
+          </div>
           <div className="flex justify-between">
             <dt className="text-neutral-400">Region</dt>
             <dd className="text-neutral-200">{lobby.region}</dd>
@@ -74,6 +81,11 @@ export default function LobbyRequirementsPanel({ lobby, isOwner }: LobbyRequirem
   return (
     <div>
       <div className="space-y-3">
+        <div className="flex justify-between text-sm">
+          <span className="text-neutral-400">Visibility</span>
+          <span className="text-neutral-200">{lobby.visibility === 'private' ? 'Private' : 'Open'}</span>
+        </div>
+
         <label className="block text-xs text-neutral-400">
           Region
           <select
