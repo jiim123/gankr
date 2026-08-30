@@ -7,6 +7,7 @@ import { syncSteamLibrary } from '../lib/librarySync'
 import { useSession } from '../lib/session'
 import { labelForTag } from '../lib/feedback'
 import { loadProfile, minutesToHours, reputationColorClass, type ProfileData } from '../lib/profile'
+import { SlidingNumber } from '../components/animate-ui/primitives/texts/sliding-number'
 
 const EMPTY_PROFILE_DATA: ProfileData = {
   profile: null,
@@ -171,9 +172,10 @@ export default function ProfilePage() {
           <div className="space-y-6">
             <section className="surface p-4">
               <h2 className="text-sm font-medium text-foreground">Gankr Status</h2>
-              <p className={`mt-2 text-4xl font-bold ${reputationColorClass(profile.reputation_score)}`}>
-                {profile.reputation_score}
-              </p>
+              <SlidingNumber
+                number={profile.reputation_score}
+                className={`mt-2 text-4xl font-bold ${reputationColorClass(profile.reputation_score)}`}
+              />
               <p className="text-xs text-neutral-500">Reputation</p>
 
               {feedbackCounts.length > 0 && (
