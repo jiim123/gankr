@@ -16,14 +16,19 @@
     "build:unpacked": "electron-vite build && electron-builder --dir"
   },
   "dependencies": {
+    "@radix-ui/react-label": "^2.1.15",
     "@supabase/supabase-js": "^2.112.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "electron-updater": "^6.8.9",
     "iconoir-react": "^7.12.1",
     "motion": "^13.1.1",
+    "radix-ui": "^1.6.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
-    "react-use-measure": "^2.1.7"
+    "react-use-measure": "^2.1.7",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.1",

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Filter } from 'iconoir-react'
 import type { Tables } from '@shared/db-types'
 import { MIC_OPTIONS, REGIONS, TONE_OPTIONS } from '../lib/lobby-options'
+import LabeledCheckbox from './LabeledCheckbox'
 
 type MicRequirement = Tables<'lobbies'>['mic']
 type LobbyTone = Tables<'lobbies'>['tone']
@@ -174,15 +175,14 @@ export default function LobbyFilterPopover({ filters, onChange, ownedGames }: Lo
             </select>
           </label>
 
-          <label className="flex items-center gap-2 pt-1 text-sm text-foreground">
-            <input
-              type="checkbox"
-              className="h-4 w-4 accent-primary"
-              checked={filters.ownedOnly}
-              onChange={(event) => set('ownedOnly', event.target.checked)}
-            />
+          <LabeledCheckbox
+            className="flex items-center gap-2 pt-1 text-sm text-foreground"
+            checked={filters.ownedOnly}
+            onCheckedChange={(checked) => set('ownedOnly', checked === true)}
+            size="sm"
+          >
             Show only games you own
-          </label>
+          </LabeledCheckbox>
         </div>
       )}
     </div>
